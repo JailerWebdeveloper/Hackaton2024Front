@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { FiUser, FiMail, FiLock, FiEye, FiEyeOff } from 'react-icons/fi';
 import { FaIdCard, FaGraduationCap, FaBuilding } from 'react-icons/fa';
 import { getFacultades, getProgramas } from '../../../utils/services/get';
+import { createUser } from "../../../utils/services/post";
 
 const Register = () => {
     const navigate = useNavigate();
@@ -118,16 +119,13 @@ const Register = () => {
                     correo: formState.correo,
                     usuario: formState.usuario,
                     contrasena: formState.contrasena,
-                    rol: "estudiante", // Role is now hardcoded as "estudiante"
+                    rol: "estudiante", 
                     facultadId: parseInt(formState.facultadId),
                     programaId: parseInt(formState.programaId)
                 };
 
-                const response = await fetch("https://hackathon-back-production.up.railway.app/users", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(data),
-                });
+                const response = await createUser(data);
+
 
                 if (response.ok) {
                     toast.success('Usuario registrado correctamente', {

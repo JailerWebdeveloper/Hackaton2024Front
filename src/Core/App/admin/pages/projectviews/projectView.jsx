@@ -11,49 +11,105 @@ import {
   FaClipboardList,
   FaRegCalendarAlt,
   FaTasks,
+  FaComments,
+  FaPaperPlane,
 } from "react-icons/fa";
+import { IoCheckmarkCircle, IoWarning, IoInformation } from "react-icons/io5";
 import { toast } from "sonner";
+import { getMessagesbyProject, getProjectsByID, getReporteProyectos } from "../../../../utils/services/get";
+import { create } from "motion/react-client";
+import { createMensaje } from "../../../../utils/services/post";
+import { parse } from "postcss";
 
 const ProjectView = () => {
   const { id } = useParams();
   const [project, setProject] = useState(null);
-  const [files, setFiles] = useState([]); // Archivos del proyecto
+  const [files, setFiles] = useState([]);
+  const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("info");
+  const [activeFile, setActiveFile] = useState(null);
+  const [newMessage, setNewMessage] = useState("");
+
+  // Mock user role - replace with actual user role logic
+  const isTeacher = true; // This should come from your auth context
+
+
+  const projectStates = [
+    "Activo",
+    "En revisión",
+    "Aceptado",
+    "Negado",
+    "Inactivo",
+  ];
 
   useEffect(() => {
-    const fetchProjectData = async () => {
-      try {
-        setLoading(true);
-
-        // Obtener datos del proyecto
-        const projectResponse = await axios.get(
-          `https://hackathon-back-production.up.railway.app/proyectos/${id}`
-        );
-        setProject(projectResponse.data);
-
-        // Obtener archivos relacionados
-        const filesResponse = await axios.get(
-          `https://hackathon-back-production.up.railway.app/archivos/todosarchivosporidproyecto/${id}`
-        );
-        setFiles(filesResponse.data);
-          console.log(files)
-        toast.success("Datos del proyecto cargados correctamente");
-      } catch (error) {
-        if(filesResponse.status != 200 || filesResponse.status != 201){
-        toast("No hay documentos para cargar.");
-        }
-        setError("Error al cargar el proyecto o los archivos.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (id) {
-      fetchProjectData();
+    if (files.length > 0) {
+      setActiveFile(files[0]);
     }
-  }, [id]);
+  }, [files]);
+
+  const fetchMessages = async () => {
+    try {
+      const messagesData = await getMessagesbyProject(id);
+      setMessages(messagesData);
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+      toast.error("Error al cargar los mensajes del proyecto");
+    }
+  };
+
+  const fetchProjectData = async () => {
+    try {
+      setLoading(true);
+
+      const projectResponse = await getProjectsByID(id);
+      setProject(projectResponse);
+
+      const filesResponse = await axios.get(
+        `https://hackathon-back-production.up.railway.app/archivos/todosarchivosporidproyecto/${id}`
+      );
+      setFiles(filesResponse.data);
+      await fetchMessages();
+
+      toast.success("Datos del proyecto cargados correctamente");
+    } catch (error) {
+      if (filesResponse?.status !== 200 && filesResponse?.status !== 201) {
+        toast("No hay documentos para cargar.");
+      }
+      setError("Error al cargar el proyecto o los archivos.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProjectData();
+  }, []);
+
+  const handleSubmitMessage = async (e) => {
+    e.preventDefault();
+    if (!newMessage.trim()) return;
+
+    try {
+      const data = {
+        projectId: parseInt(id),  
+        message: newMessage,
+        Asunto: 'Nuevo mensaje',
+        Remitente: 'Docente',
+      }
+      
+      const responsemessage = await createMensaje(data);
+
+
+      setNewMessage("");
+      toast.success("Mensaje enviado correctamente");
+      fetchMessages();
+    } catch (error) {
+      toast.error("Error al enviar el mensaje");
+    }
+  };
 
   if (loading)
     return (
@@ -132,82 +188,161 @@ const ProjectView = () => {
 
   const getStatusColor = (status) => {
     const statusColors = {
-      Planificación: "badge-primary",
-      Desarrollo: "badge-warning",
-      Evaluación: "badge-success",
-      Completado: "badge-secondary",
-      Activo: "badge-info",
+      Activo: "badge-primary",
+      "En revisión": "badge-warning",
+      Aceptado: "badge-success",
+      Negado: "badge-error",
+      Inactivo: "badge-neutral",
     };
     return statusColors[status] || "badge-ghost";
+  };
+
+  const handleGenerateReport = async () => {
+    try {
+      const response = await getReporteProyectos(id);
+      const url = window.URL.createObjectURL(new Blob([response]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `reporte_proyecto_${id}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success("Reporte generado y descargado con éxito.");
+    } catch (error) {
+      console.error("Error al generar el reporte:", error);
+      toast.error("Error al generar el reporte.");
+    }
+  };
+
+  const getMessageIcon = (tipo) => {
+    switch (tipo?.toLowerCase()) {
+      case 'success':
+        return <IoCheckmarkCircle className="size-6 text-green-500" />;
+      case 'warning':
+        return <IoWarning className="size-6 text-yellow-500" />;
+      default:
+        return <IoInformation className="size-6 text-blue-500" />;
+    }
+  };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('es-ES', {
+      day: '2-digit',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(date);
   };
 
   return (
     <motion.div
       initial="initial"
       animate="animate"
-      className="container mx-auto p-4 md:p-8"
+      className="container mx-auto p-4 md:p-8 overflow-auto bg-gray-50 h-screen"
     >
       <motion.div {...fadeIn} className="mb-8">
-        <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-xl shadow-sm">
           <div>
             <h1 className="text-4xl font-bold text-gray-800 mb-2">{titulo}</h1>
             <div className="flex gap-2 items-center text-gray-600">
               <FaUniversity className="text-primary" />
               <span>{programa?.facultad?.nombre || "No especificado"}</span>
-              <span className="text-gray-400">|</span>
-              <FaBookReader className="text-primary" />
-              <span>{programa?.nombre || "No especificado"}</span>
             </div>
           </div>
           <div className="flex flex-col gap-2 items-end">
-            <span className={`badge ${getStatusColor(estado)} badge-lg`}>
-              {estado}
-            </span>
+            <button
+              onClick={handleGenerateReport}
+              className="btn btn-primary gap-2"
+            >
+              <FaClipboardList />
+              Generar Reporte
+            </button>
+          </div>
+        </div>
+
+        {/* Project Status Stepper */}
+        <div className="mt-8 p-6 bg-white rounded-xl shadow-sm">
+          <h2 className="text-xl font-semibold mb-6">Estado del Proyecto</h2>
+          <div className="flex justify-between items-center">
+            {projectStates.map((state, index) => {
+              const isActive = projectStates.indexOf(estado) >= index;
+              return (
+                <div key={state} className="flex flex-1 items-center">
+                  <div className="flex flex-col items-center flex-1">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isActive ? 'bg-primary text-white' : 'bg-gray-200'
+                      }`}>
+                      {index + 1}
+                    </div>
+                    <span className={`mt-2 text-sm ${isActive ? 'text-primary font-medium' : 'text-gray-500'
+                      }`}>
+                      {state}
+                    </span>
+                  </div>
+                  {index < projectStates.length - 1 && (
+                    <div className={`h-1 flex-1 ${isActive ? 'bg-primary' : 'bg-gray-200'
+                      }`} />
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </motion.div>
 
-      <div className="tabs tabs-boxed mb-6">
+      <div className="tabs tabs-boxed mb-6 bg-white p-2 rounded-lg">
         <a
-          className={`tab ${activeTab === "info" ? "tab-active" : ""}`}
+          className={`tab tab-lg ${activeTab === "info" ? "tab-active" : ""}`}
           onClick={() => setActiveTab("info")}
         >
           Información General
         </a>
         <a
-          className={`tab ${activeTab === "team" ? "tab-active" : ""}`}
+          className={`tab tab-lg ${activeTab === "team" ? "tab-active" : ""}`}
           onClick={() => setActiveTab("team")}
         >
           Equipo
         </a>
         {files.length > 0 && (
           <a
-            className={`tab ${activeTab === "docs" ? "tab-active" : ""}`}
+            className={`tab tab-lg ${activeTab === "docs" ? "tab-active" : ""}`}
             onClick={() => setActiveTab("docs")}
           >
             Documentos
           </a>
         )}
+        <a
+          className={`tab tab-lg ${activeTab === "messages" ? "tab-active" : ""}`}
+          onClick={() => setActiveTab("messages")}
+        >
+          <div className="flex items-center gap-2">
+            <FaComments />
+            Mensajes
+            {messages.length > 0 && (
+              <span className="badge badge-primary badge-sm">{messages.length}</span>
+            )}
+          </div>
+        </a>
       </div>
 
       <motion.div {...fadeIn} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {activeTab === "info" && (
           <>
-            <div className="lg:col-span-2 card bg-base-100 shadow-xl">
+            <div className="lg:col-span-2 card bg-white shadow-sm hover:shadow-md transition-shadow">
               <div className="card-body">
-                <h2 className="card-title flex gap-2">
-                  <FaClipboardList />
+                <h2 className="card-title flex gap-2 text-2xl">
+                  <FaClipboardList className="text-primary" />
                   Descripción del Proyecto
                 </h2>
-                <p className="text-gray-600">{descripcion}</p>
+                <p className="text-gray-600 leading-relaxed">{descripcion}</p>
 
                 <div className="divider"></div>
 
-                <h3 className="font-bold flex gap-2 items-center">
-                  <FaTasks />
+                <h3 className="font-bold flex gap-2 items-center text-xl">
+                  <FaTasks className="text-primary" />
                   Objetivos
                 </h3>
-                <ul className="list-disc list-inside space-y-2">
+                <ul className="list-disc list-inside space-y-3">
                   {objetivos?.map((objective, index) => (
                     <li key={index} className="text-gray-600">
                       {objective.nombre}
@@ -217,20 +352,20 @@ const ProjectView = () => {
               </div>
             </div>
 
-            <div className="card bg-base-100 shadow-xl">
+            <div className="card bg-white shadow-sm hover:shadow-md transition-shadow">
               <div className="card-body">
-                <h2 className="card-title flex gap-2">
-                  <FaRegCalendarAlt />
+                <h2 className="card-title flex gap-2 text-2xl">
+                  <FaRegCalendarAlt className="text-primary" />
                   Cronograma
                 </h2>
                 <div className="space-y-4">
-                  <div>
+                  <div className="p-4 bg-gray-50 rounded-lg">
                     <p className="text-sm text-gray-500">Fecha de Inicio</p>
-                    <p className="font-semibold">{fechaInicio}</p>
+                    <p className="font-semibold text-lg">{fechaInicio}</p>
                   </div>
-                  <div>
+                  <div className="p-4 bg-gray-50 rounded-lg">
                     <p className="text-sm text-gray-500">Fecha de Finalización</p>
-                    <p className="font-semibold">{fechaFin}</p>
+                    <p className="font-semibold text-lg">{fechaFin}</p>
                   </div>
                 </div>
               </div>
@@ -240,10 +375,10 @@ const ProjectView = () => {
 
         {activeTab === "team" && (
           <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="card bg-base-100 shadow-xl">
+            <div className="card bg-white shadow-sm hover:shadow-md transition-shadow">
               <div className="card-body">
                 <h2 className="card-title flex gap-2">
-                  <FaUserTie />
+                  <FaUserTie className="text-primary" />
                   Líder del Proyecto
                 </h2>
                 <div>
@@ -253,10 +388,10 @@ const ProjectView = () => {
               </div>
             </div>
 
-            <div className="card bg-base-100 shadow-xl">
+            <div className="card bg-white shadow-sm hover:shadow-md transition-shadow">
               <div className="card-body">
                 <h2 className="card-title flex gap-2">
-                  <FaChalkboardTeacher />
+                  <FaChalkboardTeacher className="text-primary" />
                   Docente Guía
                 </h2>
                 <div>
@@ -266,19 +401,26 @@ const ProjectView = () => {
               </div>
             </div>
 
-            <div className="card bg-base-100 shadow-xl">
+            <div className="card bg-white shadow-sm hover:shadow-md transition-shadow">
               <div className="card-body">
                 <h2 className="card-title flex gap-2">
-                  <FaUsers />
+                  <FaUsers className="text-primary" />
                   Colaboradores
                 </h2>
-                <ul>
+                <ul className="space-y-4">
                   {colaboradores?.map((collaborator, index) => (
-                    <li key={index}>
-                      <p className="font-semibold">{collaborator.nombre}</p>
-                      <p className="text-sm text-gray-500">
-                        {collaborator.email}
-                      </p>
+                    <li key={index} className="flex items-center gap-3">
+                      <div className="avatar placeholder">
+                        <div className="bg-primary text-white rounded-full w-8 h-8 flex items-center justify-center">
+                          {collaborator.nombre[0]}
+                        </div>
+                      </div>
+                      <div>
+                        <p className="font-semibold">{collaborator.nombre}</p>
+                        <p className="text-sm text-gray-500">
+                          {collaborator.email}
+                        </p>
+                      </div>
                     </li>
                   ))}
                 </ul>
@@ -287,20 +429,105 @@ const ProjectView = () => {
           </div>
         )}
 
-        {activeTab === "docs" && files.length > 0 && (
+        {activeTab === "docs" && (
           <div className="lg:col-span-3">
-            <div className="card bg-base-100 shadow-xl">
+            <div className="card bg-white shadow-sm hover:shadow-md transition-shadow">
               <div className="card-body">
                 <h2 className="card-title">Documentos del Proyecto</h2>
-                {files[0]?.archivo ? (
-                  <iframe
-                    src={`https://hackathon-back-production.up.railway.app/archivos/archivo-por-nombre/${files[0].nombreArchivo}`}
-                    className="w-full h-[22rem]"
-                    title="Vista Previa del Documento"
-                  ></iframe>
-                ) : (
-                  <p>No hay documentos disponibles.</p>
+                <div className="flex flex-col md:flex-row gap-4">
+                  {/* Lista de archivos */}
+                  <div className="w-full md:w-1/4">
+                    <ul className="menu bg-base-100 p-2 rounded-box border">
+                      {files.map((file, index) => (
+                        <li key={index}>
+                          <button
+                            className={`text-left hover:bg-primary hover:text-white transition-all ${activeFile === file ? 'bg-primary text-white' : ''
+                              }`}
+                            onClick={() => setActiveFile(file)}
+                          >
+                            {file.nombreArchivo}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Visualización del archivo */}
+                  <div className="w-full md:w-3/4">
+                    {activeFile ? (
+                      <iframe
+                        src={`https://hackathon-back-production.up.railway.app/archivos/archivo-por-nombre/${activeFile.nombreArchivo}`}
+                        className="w-full h-[22rem] border rounded-md"
+                        title={`Vista Previa - ${activeFile.nombreArchivo}`}
+                      ></iframe>
+                    ) : (
+                      <p className="text-gray-500">
+                        Selecciona un archivo para previsualizarlo.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "messages" && (
+          <div className="lg:col-span-3">
+            <div className="card bg-white shadow-sm">
+              <div className="card-body">
+                <h2 className="card-title flex gap-2 text-2xl mb-6">
+                  <FaComments className="text-primary" />
+                  Mensajes del Proyecto
+                </h2>
+
+                {isTeacher && (
+                  <form onSubmit={handleSubmitMessage} className="mb-6">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        placeholder="Escribe un mensaje..."
+                        className="input input-bordered flex-1"
+                      />
+                      <button type="submit" className="btn btn-primary">
+                        <FaPaperPlane />
+                        Enviar
+                      </button>
+                    </div>
+                  </form>
                 )}
+
+                <div className="space-y-4 max-h-[600px] overflow-y-auto">
+                  {messages.length === 0 ? (
+                    <div className="text-center text-gray-500 py-8">
+                      <FaComments className="mx-auto text-4xl mb-2 opacity-50" />
+                      <p>No hay mensajes en este proyecto</p>
+                    </div>
+                  ) : (
+                    messages.map((message) => (
+                      <div
+                        key={message.id}
+                        className="flex gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                      >
+                        {/* <div className="flex-shrink-0">
+                          {getMessageIcon(message.tipo)}
+                        </div> */}
+                        <div className="flex-grow">
+                          <p className="text-gray-800">
+                            {message.message}
+                          </p>
+                          {/* {message.fecha && (
+                            <p className="text-xs text-gray-400 mt-2">
+                              {formatDate(message.fecha)}
+                            </p>
+                          )} */}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             </div>
           </div>

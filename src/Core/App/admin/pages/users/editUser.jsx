@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaUserShield } from 'react-icons/fa';
 import { toast } from 'sonner';
-import { updateUserRole } from '../../../../utils/services/get';
+import { updateUserRole } from '../../../../utils/services/put';
 
 const EditUserRole = ({ user, onSave, onCancel }) => {
   const [selectedRole, setSelectedRole] = useState(user.rol);

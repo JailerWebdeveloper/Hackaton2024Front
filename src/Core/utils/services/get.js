@@ -1,3 +1,5 @@
+
+import axios from "axios";
 import baseApi from "./api";
 
 export const getData = async (endpoint, params = {}) => {
@@ -19,27 +21,25 @@ export const getData = async (endpoint, params = {}) => {
 
 //usuarios
 export const getAllUsers = async () => {
-  return getData(`/usuarios`);
+  return getData(`/users`);
 };
 
 export const getUserinfo = async (id) => {
-  return getData(`/usuarios/${id}`);
+  return getData(`/users/${id}`);
 };
 
 export const searchUsers = async (query) => {
-  return getData(`/usuarios/search?q=${query}`);
+  return getData(`/users/search?q=${query}`);
 };
 
 export const getAllUsersDashboard = async () => {
   return getData(`/users/dashboard-usuarios`);
 };
-//proyectos
-export const GetProjectbyID = async (id) => {
-  return getData(`/proyectos/${id}`);
-};
+
 export const GetallProject = async () => {
   return getData(`/proyectos`);
 };
+
 export const GetProjectbyUser = async (userid) => {
   return getData(`/proyectos/usuario/${userid}`);
 };
@@ -75,24 +75,30 @@ export const getFilesbyProject = async (id) => {
 
 //proyectos
 
+export const GetProjectbyID = async (id) => {
+  return getData(`/proyectos/${id}`);
+};
+
 export const GetallProjects = async () => {
   return getData(`/proyectos`);
-}
-export const getProjectsBystatus = async (status) => {  
+};
+export const getProjectsBystatus = async (status) => {
   return getData(`/proyectos/dashboard-proyectos/${status}`);
-}
+};
 
 export const getProjectsByID = async (id) => {
   return getData(`/proyectos/${id}`);
-}
+};
 
 export const getProjectsbyEmail = async (email) => {
-  return getData(`/proyectos/search/email/${email}`);
-}
+  const queryParams = new URLSearchParams({ email });
+  return getData(`/proyectos/search/email?${queryParams}`);
+};
+
 
 export const getProjectsbyName = async (name) => {
   return getData(`/proyectos/search/name/${name}`);
-}
+};
 
 export const getProjectsbyProgram = async (id) => {
   return getData(`/proyectos/todosproyectosporidprograma/${id}`);
@@ -101,17 +107,28 @@ export const getProjectsbyProgram = async (id) => {
 //mensajes
 export const getMessagesbyProject = async (id) => {
   return getData(`/mensajes/proyecto/${id}`);
-}
+};
 
 export const getMensajesporCorreo = async (email) => {
   return getData(`/mensajes/mensajesporcorreo/${email}`);
-}
+};
 
 //reportes
 export const getReporteUsuarios = async () => {
   return getData(`/reports/users`);
-}
+};
 
 export const getReporteProyectos = async (id) => {
-  return getData(`/reports/project/${id}`);
-}
+  try {
+    const response = await axios.get(
+      `https://hackathon-back-production.up.railway.app/reports/project/${id}`,
+      {
+        responseType: "blob", 
+      }
+    );
+    return response.data; 
+  } catch (error) {
+    console.error("Error al obtener el reporte:", error);
+    throw error;
+  }
+};

@@ -12,12 +12,10 @@ const CreateProject = () => {
   const { createProject, loading } = useCreateProject();
   const { user } = useUser();
 
-  // Estados
   const [objectives, setObjectives] = useState([{ nombre: '' }]);
   const [collaborators, setCollaborators] = useState([{ nombre: '', email: '', rol: '' }]);
   const [document, setDocument] = useState(null);
 
-  // Estado inicial de `formData`
   const [formData, setFormData] = useState({
     titulo: '',
     descripcion: '',
@@ -58,7 +56,7 @@ const CreateProject = () => {
         ),
       };
   
-      await createProject(dataToSubmit, document); // Enviar proyecto y archivo
+      await createProject(dataToSubmit, document); 
       navigate('/dashboard');
     } catch (error) {
       console.error('Error creating project:', error);

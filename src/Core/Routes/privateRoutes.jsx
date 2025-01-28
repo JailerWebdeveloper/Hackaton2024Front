@@ -1,5 +1,4 @@
 import { Routes, Route } from "react-router-dom";
-import AuthPrivateRoute from "../utils/services/authPrivateRoute";
 import AdminLayout from "../App/admin/layouts/adminLayout";
 import Dashboard from "../App/admin/pages/dashboard/dashboard";
 import ProjectView from "../App/admin/pages/projectviews/projectView";
@@ -8,6 +7,7 @@ import CreateProject from "../App/admin/pages/projectviews/createProject";
   import UserList from "../App/admin/pages/users/userList";
 import UserProjects from "../App/admin/pages/projectviews/projectUserList";
 import ProjectEdit from "../App/admin/pages/projectviews/projectEdit";
+import { AuthPrivateRoute } from "../utils/hooks/authPrivateRoute";
 
 
 const PrivateRoutes = () => (

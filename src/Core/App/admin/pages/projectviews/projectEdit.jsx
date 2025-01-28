@@ -4,6 +4,8 @@ import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useUser } from "../../../../utils/hooks/useAuth";
 import { FaTrash, FaPlus } from "react-icons/fa";
+import { GetProjectbyID } from "../../../../utils/services/get";
+import { updateProyecto } from "../../../../utils/services/put";
 
 const ProjectEdit = () => {
   const { id } = useParams();
@@ -41,38 +43,36 @@ const ProjectEdit = () => {
     ],
     vistaPreviaDocumento: []
   });
+  const fetchProject = async () => {
+    try {
+      setLoading(true);
 
-  useEffect(() => {
-    const fetchProject = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch(
-          `https://hackathon-back-production.up.railway.app/proyectos/${id}`
-        );
-        const data = await response.json();
-        
-        // Ensure the response data matches our required structure
-        const projectData = {
-          ...data,
-          vistaPreviaDocumento: data.vistaPreviaDocumento || []
-        };
-        
-        setFormData(projectData);
+      const data = await GetProjectbyID(id);
 
-        if (user) {
-          const isAdmin = user.rol === 'admin';
-          const isProjectLeader = projectData.liderProyecto.email === user.correo;
-          setCanEdit(isAdmin || isProjectLeader);
-        }
-      } catch (error) {
-        toast.error("Error al cargar el proyecto");
-      } finally {
-        setLoading(false);
+      const projectData = {
+        ...data,
+        vistaPreviaDocumento: data.vistaPreviaDocumento || []
+      };
+
+      setFormData(projectData);
+
+      if (user) {
+        const isAdmin = user.rol === 'admin';
+        const isProjectLeader = projectData.liderProyecto.email === user.correo;
+        setCanEdit(isAdmin || isProjectLeader);
       }
-    };
+    } catch (error) {
+      toast.error("Error al cargar el proyecto");
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+
+    fetchProject();
 
     if (id && !userLoading) fetchProject();
-  }, [id, user, userLoading]);
+  }, [id, user, userLoading,]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -89,18 +89,9 @@ const ProjectEdit = () => {
         programa: user.programa || formData.programa
       };
       console.log(projectData)
-      const projectResponse = await fetch(
-        `https://hackathon-back-production.up.railway.app/proyectos/${id}`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(projectData),
-        }
-      );
+      const projectResponse = updateProyecto(id, projectData);
 
-      if (!projectResponse.ok) {
+      if (!projectResponse.status === 200) {
         throw new Error('Error al actualizar el proyecto');
       }
 
@@ -127,6 +118,7 @@ const ProjectEdit = () => {
       }
 
       toast.success("Proyecto actualizado correctamente");
+      fetchProject();
       navigate(`/dashboard/project/${id}`);
     } catch (error) {
       toast.error(error.message || "Error al actualizar el proyecto");
@@ -249,7 +241,7 @@ const ProjectEdit = () => {
           <div className="card bg-base-100">
             <div className="card-body">
               <h2 className="card-title">Información General</h2>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="form-control">
                   <label className="label">
@@ -532,7 +524,7 @@ const ProjectEdit = () => {
           <div className="card bg-base-100">
             <div className="card-body">
               <h2 className="card-title">Documentos del Proyecto</h2>
-              
+
               <div className="form-control">
                 <label className="label">
                   <span className="label-text">Agregar Documentos</span>

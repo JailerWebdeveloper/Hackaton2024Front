@@ -2,9 +2,9 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
-import axios from "axios";
 import { useUser } from "../../../../utils/hooks/useAuth";
-import { FaEdit } from "react-icons/fa";
+import { FaEdit, FaEye } from "react-icons/fa";
+import { getProjectsbyEmail, GetallProjects } from "../../../../utils/services/get";
 
 const UserProjects = () => {
   const { user, loading: userLoading, error: userError } = useUser();
@@ -13,35 +13,38 @@ const UserProjects = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchUserProjects = async () => {
-      if (!user?.correo) return;
-
+    const fetchProjects = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(
-          `https://hackathon-back-production.up.railway.app/proyectos/search/email`,
-          {
-            params: {
-              email: user.correo
-            }
-          }
-        );
-        setProjects(response.data);
+        let response;
+        if (user?.rol === "administrador") {
+          response = await GetallProjects();
+        } else if (user?.correo) {
+          response = await getProjectsbyEmail(user.correo);
+        }
+
+        if (response) {
+          setProjects(response);
+        }
       } catch (err) {
-        const errorMessage = err.response?.data?.message || "Error al cargar los proyectos";
+        const errorMessage = err.response?.message || "Error al cargar los proyectos";
         toast.error(errorMessage);
       } finally {
         setLoading(false);
       }
     };
 
-    if (user?.correo) {
-      fetchUserProjects();
+    if (user) {
+      fetchProjects();
     }
   }, [user]);
 
   const handleEdit = (projectId) => {
     navigate(`/dashboard/projects/edit/${projectId}`);
+  };
+
+  const handleView = (projectId) => {
+    navigate(`/dashboard/projects/view/${projectId}`);
   };
 
   if (userLoading || loading) {
@@ -69,7 +72,7 @@ const UserProjects = () => {
           animate={{ y: 0 }}
           className="text-4xl font-bold mb-8 text-gray-800"
         >
-          Mis Proyectos
+          {user?.rol === "administrador" ? "Todos los Proyectos" : "Mis Proyectos"}
         </motion.h1>
 
         <div className="bg-white rounded-xl w-full h-full overflow-auto p-8 shadow-lg">
@@ -82,7 +85,9 @@ const UserProjects = () => {
                 className="text-center py-12"
               >
                 <p className="text-gray-500 text-lg">
-                  No tienes proyectos asociados aún.
+                  {user?.rol === "administrador"
+                    ? "No hay proyectos registrados."
+                    : "No tienes proyectos asociados aún."}
                 </p>
               </motion.div>
             ) : (
@@ -104,35 +109,52 @@ const UserProjects = () => {
                       </tr>
                     </thead>
                     <tbody>
-  {projects.map((project) => (
-    <tr key={project.id}>
-      <td className="font-medium">{project.titulo}</td>
-      <td>
-        <span className={`badge ${
-          project.estado === 'Activo' ? 'badge-success' :
-          project.estado === 'Completado' ? 'badge-info' :
-          project.estado === 'Desarrollo' ? 'badge-warning' :
-          'badge-neutral'
-        }`}>
-          {project.estado}
-        </span>
-      </td>
-      <td>{new Date(project.fechaInicio).toLocaleDateString()}</td>
-      <td>{new Date(project.fechaFin).toLocaleDateString()}</td>
-      <td>{project.programa?.nombre || "No especificado"}</td>
-      <td>
-        <button
-          onClick={() => handleEdit(project.id)}
-          className="btn btn-ghost btn-sm"
-          title="Editar proyecto"
-        >
-          <FaEdit className="text-primary" />
-        </button>
-      </td>
-    </tr>
-  ))}
-</tbody>
-
+                      {projects.map((project) => (
+                        <tr key={project.id}>
+                          <td className="font-medium">{project.titulo}</td>
+                          <td>
+                            <span
+                              className={`badge ${
+                                project.estado === "Activo"
+                                  ? "badge-success"
+                                  : project.estado === "Completado"
+                                  ? "badge-info"
+                                  : project.estado === "Desarrollo"
+                                  ? "badge-warning"
+                                  : "badge-neutral"
+                              }`}
+                            >
+                              {project.estado}
+                            </span>
+                          </td>
+                          <td>
+                            {new Date(project.fechaInicio).toLocaleDateString()}
+                          </td>
+                          <td>
+                            {new Date(project.fechaFin).toLocaleDateString()}
+                          </td>
+                          <td>{project.programa?.nombre || "No especificado"}</td>
+                          <td className="flex gap-2">
+                            {/* Botón para ir a la vista del proyecto */}
+                            <button
+                              onClick={() => handleView(project.id)}
+                              className="btn btn-ghost btn-sm"
+                              title="Ver proyecto"
+                            >
+                              <FaEye className="text-success" />
+                            </button>
+                            {/* Botón para editar el proyecto */}
+                            <button
+                              onClick={() => handleEdit(project.id)}
+                              className="btn btn-ghost btn-sm"
+                              title="Editar proyecto"
+                            >
+                              <FaEdit className="text-primary" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
                   </table>
                 </div>
               </motion.div>

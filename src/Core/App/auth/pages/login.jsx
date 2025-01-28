@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
-import {  FiLock, FiEye, FiEyeOff } from 'react-icons/fi';
+import { FiLock, FiEye, FiEyeOff } from 'react-icons/fi';
 import { toast } from 'sonner';
 import { CiUser } from "react-icons/ci";
+import { loginUser } from "../../../utils/services/post";
 
 const Login = () => {
     const [email, setEmail] = useState("");
@@ -29,26 +30,21 @@ const Login = () => {
             toast.error('Error en contraseña', { description: 'La contraseña debe tener 8 caracteres como mínimo' });
             return;
         }
-        
+
         try {
-            const data={
-                usuario:email,
-                contrasena:password,
+            const data = {
+                usuario: email,
+                contrasena: password,
             }
             console.log(data)
-            const response = await fetch("https://hackathon-back-production.up.railway.app/users/login", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data),
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                const token = data.token;
+            const response = await loginUser(data);
+            console.log(response)
+            if (response.status === 200 || response.status === 201) {
+                const token = response.data.token;
 
                 localStorage.removeItem("authToken");
                 sessionStorage.removeItem("authToken");
-    
+
                 if (rememberMe) {
                     localStorage.setItem("authToken", token);
                 } else {
@@ -56,9 +52,9 @@ const Login = () => {
                 }
 
                 const decodedToken = jwtDecode(token);
-                toast.success('Inicio de sesión exitoso', { 
+                toast.success('Inicio de sesión exitoso', {
                     description: `Bienvenido, ${decodedToken.name || 'usuario'}`,
-                    duration: 2000 
+                    duration: 2000
                 });
 
                 navigate("/dashboard", { replace: true });
@@ -78,9 +74,9 @@ const Login = () => {
                 <div className="text-center mb-6">
                     <h1 className="text-3xl font-bold text-color-primary mb-2">Iniciar Sesión</h1>
                     <p className="text-gray-600">
-                        ¿No tienes cuenta? 
-                        <a 
-                            href="/auth/register" 
+                        ¿No tienes cuenta?
+                        <a
+                            href="/auth/register"
                             className="text-color-primary hover:underline ml-1 font-semibold"
                         >
                             Regístrate
@@ -151,7 +147,7 @@ const Login = () => {
                                 Recordarme
                             </label>
                         </div>
-                      
+
                     </div>
 
                     <button
