@@ -8,6 +8,8 @@ import CreateProject from "../App/admin/pages/projectviews/createProject";
 import UserProjects from "../App/admin/pages/projectviews/projectUserList";
 import ProjectEdit from "../App/admin/pages/projectviews/projectEdit";
 import { AuthPrivateRoute } from "../utils/hooks/authPrivateRoute";
+import Programs from "../App/admin/pages/recursos/programasManage";
+import Faculties from "../App/admin/pages/recursos/facultadManage";
 
 
 const PrivateRoutes = () => (
@@ -20,6 +22,8 @@ const PrivateRoutes = () => (
     <Route path="/projects/edit/:id" element={<ProjectEdit/>}/>
     <Route path="/projects/list" element={<UserProjects/>}/>
     <Route path="/users/list" element={<UserList/>}/>
+    <Route path ='/manage/programs' element={<Programs/>}/>
+    <Route path ='/manage/Faculties' element={<Faculties/>}/>
   </Route>
 </Routes>
 );

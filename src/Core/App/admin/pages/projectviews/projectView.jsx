@@ -20,6 +20,7 @@ import { getMessagesbyProject, getProjectsByID, getReporteProyectos } from "../.
 import { create } from "motion/react-client";
 import { createMensaje } from "../../../../utils/services/post";
 import { parse } from "postcss";
+import { useUser } from "../../../../utils/hooks/useAuth";
 
 const ProjectView = () => {
   const { id } = useParams();
@@ -32,10 +33,10 @@ const ProjectView = () => {
   const [activeFile, setActiveFile] = useState(null);
   const [newMessage, setNewMessage] = useState("");
 
-  // Mock user role - replace with actual user role logic
-  const isTeacher = true; // This should come from your auth context
+  const [isTeacher, setIsTeacher] = useState(false); 
 
 
+  const {user}=useUser();
   const projectStates = [
     "Activo",
     "En revisión",
@@ -73,6 +74,9 @@ const ProjectView = () => {
       setFiles(filesResponse.data);
       await fetchMessages();
 
+      if (projectResponse?.profesorGuia?.email === user?.email) {
+        setIsTeacher(true); 
+      }
       toast.success("Datos del proyecto cargados correctamente");
     } catch (error) {
       if (filesResponse?.status !== 200 && filesResponse?.status !== 201) {
@@ -100,7 +104,7 @@ const ProjectView = () => {
         Remitente: 'Docente',
       }
       
-      const responsemessage = await createMensaje(data);
+     await createMensaje(data);
 
 
       setNewMessage("");

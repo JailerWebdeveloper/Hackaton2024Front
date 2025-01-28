@@ -266,10 +266,12 @@ const ProjectEdit = () => {
                     className="select select-bordered"
                     required
                   >
-                    <option value="Planificación">Planificación</option>
-                    <option value="Desarrollo">Desarrollo</option>
+
+                    <option value="En revisión">En revisión</option>
+                    <option value="Aceptado">Aceptado</option>
                     <option value="Evaluación">Evaluación</option>
-                    <option value="Completado">Completado</option>
+                    <option value="Negado">Negado</option>
+                    <option value="Inactivo">Inactivo</option>
                     <option value="Activo">Activo</option>
                   </select>
                 </div>

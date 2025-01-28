@@ -44,7 +44,7 @@ const UserProjects = () => {
   };
 
   const handleView = (projectId) => {
-    navigate(`/dashboard/projects/view/${projectId}`);
+    navigate(`/dashboard/project/${projectId}`);
   };
 
   if (userLoading || loading) {

@@ -40,15 +40,15 @@ const NotificationsModal = ({ isOpen, onClose, userEmail }) => {
         }
     };
 
-    const formatDate = (dateString) => {
-        const date = new Date(dateString);
-        return new Intl.DateTimeFormat('es-ES', {
-            day: '2-digit',
-            month: 'short',
-            hour: '2-digit',
-            minute: '2-digit'
-        }).format(date);
-    };
+    // const formatDate = (dateString) => {
+    //     const date = new Date(dateString);
+    //     return new Intl.DateTimeFormat('es-ES', {
+    //         day: '2-digit',
+    //         month: 'short',
+    //         hour: '2-digit',
+    //         minute: '2-digit'
+    //     }).format(date);
+    // };
 
     return (
         <AnimatePresence>
@@ -110,9 +110,9 @@ const NotificationsModal = ({ isOpen, onClose, userEmail }) => {
                                                 <p className="text-sm text-gray-600 mt-1">
                                                     {notification.mensaje}
                                                 </p>
-                                                <p className="text-xs text-gray-400 mt-2">
+                                                {/* <p className="text-xs text-gray-400 mt-2">
                                                     {formatDate(notification.fecha)}
-                                                </p>
+                                                </p> */}
                                             </div>
                                         </div>
                                     ))}

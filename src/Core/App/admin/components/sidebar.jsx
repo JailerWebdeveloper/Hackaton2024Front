@@ -42,20 +42,19 @@ const menuItems = [
     },
     {
         icon: HiViewBoards,
-        label: 'Gestión de Procesos',
+        label: 'Gestión de Recursos',
         subItems: [
-            { label: 'Flujos de Trabajo', path: '/processes/workflows' },
-            { label: 'Procesos Automatizados', path: '/processes/automated' },
-            { label: 'Estadísticas', path: '/processes/stats' }
+            { label: 'Gestion de programas', path: '/dashboard/manage/programs' },
+            { label: 'Gestion de  Facultades', path: '/dashboard/manage/Faculties' },
         ]
     },
-    {
-        icon: HiChartPie,
-        label: 'Reportes',
-        subItems: [
-            { label: 'Reportes Generales', path: 'reports/general' },
-        ]
-    }
+    // {
+    //     icon: HiChartPie,
+    //     label: 'Reportes',
+    //     subItems: [
+    //         { label: 'Reportes Generales', path: 'reports/general' },
+    //     ]
+    // }
 ];
 
 const Sidebar = () => {
@@ -87,6 +86,7 @@ const Sidebar = () => {
 
     const filteredMenuItems = menuItems.filter(item => {
         if (item.label === 'Gestión de Usuarios' && user?.rol !== 'admin') return false;
+        if (item.label === 'Gestión de Recursos' && user?.rol !== 'admin') return false
         if (item.label === 'Reportes' && user?.rol !== 'admin') return false;
         return true;
     });

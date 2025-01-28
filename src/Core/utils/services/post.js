@@ -3,6 +3,7 @@ import baseApi from "./api";
 export const postData = async (endpoint, body) => {
   try {
     const response = await baseApi.post(endpoint, body);
+    console.log(response);
     return {
       status: response.status,
       data: response.data,
@@ -10,7 +11,7 @@ export const postData = async (endpoint, body) => {
   } catch (error) {
     if (error.response) {
       return {
-        status: error.response.data.status,
+        status: error.response,
         error: error.response.data.message.message,
       };
     } else if (error.request) {
