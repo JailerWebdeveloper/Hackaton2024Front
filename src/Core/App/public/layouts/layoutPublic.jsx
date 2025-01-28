@@ -11,7 +11,6 @@ const LayoutPublic = () => {
             <Outlet />
             </div>
        
-        <Footer/>
         </div>
     </>);
 }

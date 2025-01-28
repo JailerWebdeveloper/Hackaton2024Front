@@ -19,8 +19,8 @@ const Navbar = () => {
                     />
                     <div className=" divider divider-horizontal mx-2 md:mx-4"></div>
                     <h1 className="text-lg md:text-2xl font-semibold text-color-primary capitalize">
-                        Hackaton 2024
-                    </h1>
+                        Sistema de Gestión de Proyectos                    
+                        </h1>
                 </div>
 
                 <div className="hidden md:flex items-center space-x-4">
@@ -44,8 +44,8 @@ const Navbar = () => {
                 </div>
 
                 <div className="md:hidden">
-                    <button 
-                        onClick={toggleMenu} 
+                    <button
+                        onClick={toggleMenu}
                         className="btn btn-ghost"
                     >
                         {isMenuOpen ? <FiX size={24} /> : <FiMenu size={24} />}
@@ -55,13 +55,13 @@ const Navbar = () => {
 
             {isMenuOpen && (
                 <div className="fixed inset-0 bg-black/50 z-20" onClick={toggleMenu}>
-                    <div 
+                    <div
                         className="absolute top-0 right-0 w-64 h-full bg-white shadow-lg p-6 space-y-4"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="flex justify-end">
-                            <button 
-                                onClick={toggleMenu} 
+                            <button
+                                onClick={toggleMenu}
                                 className="btn btn-ghost btn-circle"
                             >
                                 <FiX size={24} />
