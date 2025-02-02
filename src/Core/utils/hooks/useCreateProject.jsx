@@ -1,59 +1,46 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { createArchivo, createProyecto } from '../services/post';
 
 export const useCreateProject = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const createProject = async (projectData, documentFile) => {
+
     try {
       setLoading(true);
       setError(null);
 
-      console.log(projectData)
-      const projectResponse = await fetch(
-        'https://hackathon-back-production.up.railway.app/proyectos',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(projectData),
-        }
-      );
+      const projectResponse = await createProyecto(projectData)
 
-      if (!projectResponse.ok) {
+
+      if (projectResponse.status != 201) {
         throw new Error('Error al crear el proyecto');
       }
 
-      const createdProject = await projectResponse.json();
       toast.success('Proyecto creado exitosamente');
 
       if (documentFile) {
-        const formData = new FormData();
-        formData.append('file', documentFile);
-        formData.append('categoria', 'Documento Proyecto');
-        formData.append('proyectoId', createdProject.id);
 
-        const fileResponse = await fetch(
-          'https://hackathon-back-production.up.railway.app/archivos',
-          {
-            method: 'POST',
-            body: formData,
-          }
-        );
+        const formData = {
+          file: documentFile,
+          categoria: 'Documento Proyecto',
+          proyectoId: projectResponse.data.id
 
-        if (!fileResponse.ok) {
+        }
+
+        const fileResponse = await createArchivo(formData);
+
+        if (fileResponse.status != 201) {
           throw new Error('Error al cargar el archivo');
         }
 
         toast.success('Archivo cargado exitosamente');
       }
 
-      return createdProject;
     } catch (err) {
       const errorMessage = err.message || 'Error desconocido';
-      console.log(err)
       setError(errorMessage);
       toast.error(errorMessage);
       throw err;

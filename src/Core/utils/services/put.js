@@ -23,7 +23,7 @@ export const updateData = async (endpoint, body) => {
   }
 };
 
-//usuarios
+
 export const updateUserRole = async (userId, newRole) => {
   try {
     const response = await axios.put(
@@ -43,18 +43,14 @@ export const updateUserRole = async (userId, newRole) => {
   }
 };
 
-//facultades
 
 export const updateFacultad = async (id, body) => {
   return updateData(`/facultad/update/${id}`, body);
 };
 
-//programas
 export const updatePrograma = async (id, body) => {
   return updateData(`/programa/update/${id}`, body);
 };
-
-//proyectos
 
 export const updateProyecto = async (id, body) => {
   return updateData(`/proyectos/update/${id}`, body);

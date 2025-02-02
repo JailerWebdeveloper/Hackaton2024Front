@@ -36,8 +36,8 @@ const menuItems = [
         label: 'Gestión de Usuarios',
         subItems: [
             { label: 'Administrar Usuarios', path: 'users/list' },
-            { label: 'Permisos', path: '/users/permissions' },
-            { label: 'Roles', path: '/users/roles' }
+            // { label: 'Permisos', path: '/users/permissions' },
+            // { label: 'Roles', path: '/users/roles' }
         ]
     },
     {

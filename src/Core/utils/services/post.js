@@ -42,8 +42,10 @@ export const createPrograma = async (body) => {
 };
 
 //archivo
-export const createArchivo = async (body) => {
-  return postData(`/archivos`, body);
+export const createArchivo = async (formData) => {
+  return await baseApi.post(`/archivos`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
 };
 
 //proyecto
@@ -55,4 +57,3 @@ export const createProyecto = async (body) => {
 export const createMensaje = async (body) => {
   return postData(`/mensajes`, body);
 };
-

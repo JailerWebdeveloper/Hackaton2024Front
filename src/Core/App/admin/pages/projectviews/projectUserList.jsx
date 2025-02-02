@@ -64,7 +64,7 @@ const UserProjects = () => {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="py-12 px-4 sm:px-6 lg:px-8"
+      className="py-12 px-4 sm:px-6 overflow-auto h-screen lg:px-8"
     >
       <div className="max-w-7xl mx-auto">
         <motion.h1

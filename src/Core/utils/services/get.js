@@ -1,4 +1,3 @@
-
 import axios from "axios";
 import baseApi from "./api";
 
@@ -70,7 +69,7 @@ export const getProgramabyFacultad = async (id) => {
 //archivos
 
 export const getFilesbyProject = async (id) => {
-  return getData(`/archivos/todosarchivosporidproyecto/${proyectoid}`);
+  return getData(`/public/docs/${id}`);
 };
 
 //proyectos
@@ -94,7 +93,6 @@ export const getProjectsbyEmail = async (email) => {
   const queryParams = new URLSearchParams({ email });
   return getData(`/proyectos/search/email?${queryParams}`);
 };
-
 
 export const getProjectsbyName = async (name) => {
   return getData(`/proyectos/search/name/${name}`);
@@ -120,13 +118,10 @@ export const getReporteUsuarios = async () => {
 
 export const getReporteProyectos = async (id) => {
   try {
-    const response = await axios.get(
-      `https://hackathon-back-production.up.railway.app/reports/project/${id}`,
-      {
-        responseType: "blob", 
-      }
-    );
-    return response.data; 
+    const response = await baseApi.get(`/reports/project/${id}`, {
+      responseType: "blob",
+    });
+    return response.data;
   } catch (error) {
     console.error("Error al obtener el reporte:", error);
     throw error;

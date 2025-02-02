@@ -1,42 +1,50 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import axios from "axios";
 import {
-  FaUserTie,
-  FaUsers,
-  FaChalkboardTeacher,
-  FaBookReader,
-  FaUniversity,
-  FaClipboardList,
-  FaRegCalendarAlt,
-  FaTasks,
-  FaComments,
-  FaPaperPlane,
-} from "react-icons/fa";
-import { IoCheckmarkCircle, IoWarning, IoInformation } from "react-icons/io5";
+  Calendar,
+  Users,
+  BookOpen,
+  Upload,
+  MessageSquare,
+  FileText,
+  User,
+  Target,
+  Clock,
+  CheckCircle,
+  AlertTriangle,
+  Info,
+  Send,
+  Download,
+  ExternalLink,
+  Edit
+} from "lucide-react";
 import { toast } from "sonner";
-import { getMessagesbyProject, getProjectsByID, getReporteProyectos } from "../../../../utils/services/get";
-import { create } from "motion/react-client";
+import {
+  getFilesbyProject,
+  getMessagesbyProject,
+  getProjectsByID,
+  getReporteProyectos
+} from "../../../../utils/services/get";
 import { createMensaje } from "../../../../utils/services/post";
-import { parse } from "postcss";
+import { updateProyecto } from "../../../../utils/services/put"; 
 import { useUser } from "../../../../utils/hooks/useAuth";
 
 const ProjectView = () => {
   const { id } = useParams();
   const [project, setProject] = useState(null);
-  const [files, setFiles] = useState([]);
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("info");
-  const [activeFile, setActiveFile] = useState(null);
+  const [activeDocumentUrl, setActiveDocumentUrl] = useState(null);
   const [newMessage, setNewMessage] = useState("");
+  const [isTeacher, setIsTeacher] = useState(false);
 
-  const [isTeacher, setIsTeacher] = useState(false); 
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [selectedState, setSelectedState] = useState("");
+  const [updateReason, setUpdateReason] = useState("");
 
-
-  const {user}=useUser();
   const projectStates = [
     "Activo",
     "En revisión",
@@ -45,11 +53,13 @@ const ProjectView = () => {
     "Inactivo",
   ];
 
+  const { user } = useUser();
+
   useEffect(() => {
-    if (files.length > 0) {
-      setActiveFile(files[0]);
+    if (project?.vistaPreviaDocumento?.length > 0) {
+      setActiveDocumentUrl(project.vistaPreviaDocumento[0]);
     }
-  }, [files]);
+  }, [project?.vistaPreviaDocumento]);
 
   const fetchMessages = async () => {
     try {
@@ -64,25 +74,16 @@ const ProjectView = () => {
   const fetchProjectData = async () => {
     try {
       setLoading(true);
-
       const projectResponse = await getProjectsByID(id);
       setProject(projectResponse);
-
-      const filesResponse = await axios.get(
-        `https://hackathon-back-production.up.railway.app/archivos/todosarchivosporidproyecto/${id}`
-      );
-      setFiles(filesResponse.data);
       await fetchMessages();
 
       if (projectResponse?.profesorGuia?.email === user?.email) {
-        setIsTeacher(true); 
+        setIsTeacher(true);
       }
       toast.success("Datos del proyecto cargados correctamente");
     } catch (error) {
-      if (filesResponse?.status !== 200 && filesResponse?.status !== 201) {
-        toast("No hay documentos para cargar.");
-      }
-      setError("Error al cargar el proyecto o los archivos.");
+      setError("Error al cargar el proyecto.");
     } finally {
       setLoading(false);
     }
@@ -90,7 +91,7 @@ const ProjectView = () => {
 
   useEffect(() => {
     fetchProjectData();
-  }, []);
+  }, [id, user?.email]);
 
   const handleSubmitMessage = async (e) => {
     e.preventDefault();
@@ -98,107 +99,19 @@ const ProjectView = () => {
 
     try {
       const data = {
-        projectId: parseInt(id),  
+        projectId: parseInt(id),
         message: newMessage,
         Asunto: 'Nuevo mensaje',
         Remitente: 'Docente',
-      }
-      
-     await createMensaje(data);
+      };
 
-
+      await createMensaje(data);
       setNewMessage("");
       toast.success("Mensaje enviado correctamente");
       fetchMessages();
     } catch (error) {
       toast.error("Error al enviar el mensaje");
     }
-  };
-
-  if (loading)
-    return (
-      <div className="container mx-auto p-8">
-        <div className="flex flex-col gap-4">
-          <div className="skeleton h-32 w-full"></div>
-          <div className="skeleton h-4 w-28"></div>
-          <div className="skeleton h-4 w-full"></div>
-          <div className="skeleton h-4 w-full"></div>
-        </div>
-      </div>
-    );
-
-  if (error)
-    return (
-      <div className="alert alert-error shadow-lg">
-        <div>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="stroke-current flex-shrink-0 h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <span>{error}</span>
-        </div>
-      </div>
-    );
-
-  if (!project)
-    return (
-      <div className="alert alert-info shadow-lg">
-        <div>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            className="stroke-current flex-shrink-0 w-6 h-6"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <span>No se encontró el proyecto.</span>
-        </div>
-      </div>
-    );
-
-  const {
-    titulo,
-    descripcion,
-    objetivos,
-    fechaInicio,
-    fechaFin,
-    estado,
-    programa,
-    liderProyecto,
-    colaboradores,
-    profesorGuia,
-  } = project;
-
-  const fadeIn = {
-    initial: { opacity: 0, y: 20 },
-    animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.5 },
-  };
-
-  const getStatusColor = (status) => {
-    const statusColors = {
-      Activo: "badge-primary",
-      "En revisión": "badge-warning",
-      Aceptado: "badge-success",
-      Negado: "badge-error",
-      Inactivo: "badge-neutral",
-    };
-    return statusColors[status] || "badge-ghost";
   };
 
   const handleGenerateReport = async () => {
@@ -211,278 +124,367 @@ const ProjectView = () => {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      toast.success("Reporte generado y descargado con éxito.");
+      toast.success("Reporte generado y descargado con éxito");
     } catch (error) {
-      console.error("Error al generar el reporte:", error);
-      toast.error("Error al generar el reporte.");
+      toast.error("Error al generar el reporte");
     }
   };
 
-  const getMessageIcon = (tipo) => {
-    switch (tipo?.toLowerCase()) {
-      case 'success':
-        return <IoCheckmarkCircle className="size-6 text-green-500" />;
-      case 'warning':
-        return <IoWarning className="size-6 text-yellow-500" />;
-      default:
-        return <IoInformation className="size-6 text-blue-500" />;
+  // Abre el modal y asigna el estado actual del proyecto al stepper
+  const handleOpenUpdateModal = () => {
+    setSelectedState(project.estado);
+    setUpdateReason("");
+    setIsUpdateModalOpen(true);
+  };
+
+  // Función para actualizar el estado
+  const handleUpdateStatus = async () => {
+    if (!selectedState || !updateReason.trim()) {
+      toast.error("Por favor, selecciona un estado y proporciona una razón.");
+      return;
+    }
+
+    try {
+      // Crea el objeto actualizado
+      const updatedProjectData = { ...project, estado: selectedState };
+
+      // Envía la actualización vía PUT
+      await updateProyecto(project.id, updatedProjectData);
+
+      // Envía un mensaje con la razón y el nuevo estado
+      const messageData = {
+        projectId: parseInt(id),
+        message: `El estado del proyecto ha sido actualizado a "${selectedState}". Razón: ${updateReason}`,
+        Asunto: 'Actualización de Estado del Proyecto',
+        Remitente: user?.nombre || "Sistema",
+      };
+      await createMensaje(messageData);
+
+      toast.success("Estado actualizado correctamente.");
+      setProject(updatedProjectData);
+      fetchMessages();
+      setIsUpdateModalOpen(false);
+    } catch (error) {
+      toast.error("Error al actualizar el estado del proyecto.");
     }
   };
 
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('es-ES', {
-      day: '2-digit',
-      month: 'short',
-      hour: '2-digit',
-      minute: '2-digit'
-    }).format(date);
-  };
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-gray-600">Cargando proyecto...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !project) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
+          <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-center mb-2">Error</h2>
+          <p className="text-gray-600 text-center">
+            {error || "No se encontró el proyecto solicitado."}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const {
+    titulo,
+    descripcion,
+    objetivos,
+    fechaInicio,
+    fechaFin,
+    estado,
+    programa,
+    liderProyecto,
+    colaboradores,
+    profesorGuia,
+    vistaPreviaDocumento
+  } = project;
+
+  const hasDocuments = vistaPreviaDocumento?.length > 0;
 
   return (
-    <motion.div
-      initial="initial"
-      animate="animate"
-      className="container mx-auto p-4 md:p-8 overflow-auto bg-gray-50 h-screen"
-    >
-      <motion.div {...fadeIn} className="mb-8">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-xl shadow-sm">
+    <div className="h-screen overflow-auto bg-gray-50">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="bg-white rounded-xl shadow-sm p-6 mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h1 className="text-4xl font-bold text-gray-800 mb-2">{titulo}</h1>
-            <div className="flex gap-2 items-center text-gray-600">
-              <FaUniversity className="text-primary" />
-              <span>{programa?.facultad?.nombre || "No especificado"}</span>
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">{titulo}</h1>
+            <div className="flex items-center gap-2 text-gray-600">
+              <BookOpen className="w-5 h-5" />
+              <span>{programa?.nombre || "No especificado"}</span>
+              <span className={`badge ${estado === 'Activo' ? 'badge-primary' : 
+                                     estado === 'En revisión' ? 'badge-warning' : 
+                                     estado === 'Aceptado' ? 'badge-success' : 
+                                     estado === 'Negado' ? 'badge-error' : 
+                                     'badge-ghost'}`}>
+                {estado}
+              </span>
             </div>
           </div>
-          <div className="flex flex-col gap-2 items-end">
+          <div className="flex gap-2">
             <button
               onClick={handleGenerateReport}
               className="btn btn-primary gap-2"
             >
-              <FaClipboardList />
+              <Download className="w-5 h-5" />
               Generar Reporte
+            </button>
+            <button
+              onClick={handleOpenUpdateModal}
+              className="btn btn-secondary gap-2"
+            >
+              <Edit className="w-5 h-5" />
+              Actualizar Estado
             </button>
           </div>
         </div>
 
-        {/* Project Status Stepper */}
-        <div className="mt-8 p-6 bg-white rounded-xl shadow-sm">
-          <h2 className="text-xl font-semibold mb-6">Estado del Proyecto</h2>
-          <div className="flex justify-between items-center">
-            {projectStates.map((state, index) => {
-              const isActive = projectStates.indexOf(estado) >= index;
-              return (
-                <div key={state} className="flex flex-1 items-center">
-                  <div className="flex flex-col items-center flex-1">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isActive ? 'bg-primary text-white' : 'bg-gray-200'
-                      }`}>
-                      {index + 1}
-                    </div>
-                    <span className={`mt-2 text-sm ${isActive ? 'text-primary font-medium' : 'text-gray-500'
-                      }`}>
-                      {state}
-                    </span>
+        {/* Modal para actualizar estado */}
+        {isUpdateModalOpen && (
+          <div className="modal modal-open">
+            <div className="modal-box relative">
+              <button 
+                className="btn btn-sm btn-circle absolute right-2 top-2"
+                onClick={() => setIsUpdateModalOpen(false)}
+              >
+                ✕
+              </button>
+              <h3 className="text-lg font-bold mb-4">
+                Actualizar Estado del Proyecto
+              </h3>
+              
+              {/* Stepper para mostrar la secuencia de estados */}
+              <div className="steps mb-4">
+                {projectStates.map((stateOption, index) => (
+                  <div
+                    key={index}
+                    className={`step cursor-pointer ${selectedState === stateOption ? "step-primary" : ""}`}
+                    onClick={() => setSelectedState(stateOption)}
+                  >
+                    {stateOption}
                   </div>
-                  {index < projectStates.length - 1 && (
-                    <div className={`h-1 flex-1 ${isActive ? 'bg-primary' : 'bg-gray-200'
-                      }`} />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </motion.div>
+                ))}
+              </div>
 
-      <div className="tabs tabs-boxed mb-6 bg-white p-2 rounded-lg">
-        <a
-          className={`tab tab-lg ${activeTab === "info" ? "tab-active" : ""}`}
-          onClick={() => setActiveTab("info")}
-        >
-          Información General
-        </a>
-        <a
-          className={`tab tab-lg ${activeTab === "team" ? "tab-active" : ""}`}
-          onClick={() => setActiveTab("team")}
-        >
-          Equipo
-        </a>
-        {files.length > 0 && (
-          <a
-            className={`tab tab-lg ${activeTab === "docs" ? "tab-active" : ""}`}
-            onClick={() => setActiveTab("docs")}
-          >
-            Documentos
-          </a>
+              {/* Campo para ingresar la razón */}
+              <div className="form-control mb-4">
+                <label className="label">
+                  <span className="label-text">Razón de la actualización</span>
+                </label>
+                <textarea
+                  value={updateReason}
+                  onChange={(e) => setUpdateReason(e.target.value)}
+                  className="textarea textarea-bordered"
+                  placeholder="Ingresa la razón de la actualización..."
+                ></textarea>
+              </div>
+
+              <div className="modal-action">
+                <button className="btn btn-ghost" onClick={() => setIsUpdateModalOpen(false)}>Cancelar</button>
+                <button className="btn btn-primary" onClick={handleUpdateStatus}>Actualizar Estado</button>
+              </div>
+            </div>
+          </div>
         )}
-        <a
-          className={`tab tab-lg ${activeTab === "messages" ? "tab-active" : ""}`}
-          onClick={() => setActiveTab("messages")}
-        >
-          <div className="flex items-center gap-2">
-            <FaComments />
+
+        {/* Navigation Tabs */}
+        <div className="tabs tabs-boxed bg-white p-2 rounded-lg mb-6">
+          <button
+            className={`tab tab-lg gap-2 ${activeTab === "info" ? "tab-active" : ""}`}
+            onClick={() => setActiveTab("info")}
+          >
+            <Info className="w-5 h-5" />
+            Información
+          </button>
+          <button
+            className={`tab tab-lg gap-2 ${activeTab === "team" ? "tab-active" : ""}`}
+            onClick={() => setActiveTab("team")}
+          >
+            <Users className="w-5 h-5" />
+            Equipo
+          </button>
+          {hasDocuments && (
+            <button
+              className={`tab tab-lg gap-2 ${activeTab === "docs" ? "tab-active" : ""}`}
+              onClick={() => setActiveTab("docs")}
+            >
+              <FileText className="w-5 h-5" />
+              Documentos
+            </button>
+          )}
+          <button
+            className={`tab tab-lg gap-2 ${activeTab === "messages" ? "tab-active" : ""}`}
+            onClick={() => setActiveTab("messages")}
+          >
+            <MessageSquare className="w-5 h-5" />
             Mensajes
             {messages.length > 0 && (
               <span className="badge badge-primary badge-sm">{messages.length}</span>
             )}
-          </div>
-        </a>
-      </div>
+          </button>
+        </div>
 
-      <motion.div {...fadeIn} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {activeTab === "info" && (
-          <>
-            <div className="lg:col-span-2 card bg-white shadow-sm hover:shadow-md transition-shadow">
-              <div className="card-body">
-                <h2 className="card-title flex gap-2 text-2xl">
-                  <FaClipboardList className="text-primary" />
-                  Descripción del Proyecto
-                </h2>
-                <p className="text-gray-600 leading-relaxed">{descripcion}</p>
-
-                <div className="divider"></div>
-
-                <h3 className="font-bold flex gap-2 items-center text-xl">
-                  <FaTasks className="text-primary" />
-                  Objetivos
-                </h3>
-                <ul className="list-disc list-inside space-y-3">
-                  {objetivos?.map((objective, index) => (
-                    <li key={index} className="text-gray-600">
-                      {objective.nombre}
-                    </li>
-                  )) || <p>No hay objetivos definidos.</p>}
-                </ul>
+        {/* Secciones de contenido */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {activeTab === "info" && (
+            <>
+              <div className="lg:col-span-2">
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                  <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
+                    <Target className="w-6 h-6 text-primary" />
+                    Descripción y Objetivos
+                  </h2>
+                  <p className="text-gray-600 mb-6">{descripcion}</p>
+                  
+                  <h3 className="text-xl font-semibold mb-4">Objetivos del Proyecto</h3>
+                  <ul className="space-y-3">
+                    {objetivos?.map((objetivo, index) => (
+                      <li key={index} className="flex items-start gap-2">
+                        <CheckCircle className="w-5 h-5 text-primary mt-1" />
+                        <span className="text-gray-600">{objetivo.nombre}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
-            </div>
-
-            <div className="card bg-white shadow-sm hover:shadow-md transition-shadow">
-              <div className="card-body">
-                <h2 className="card-title flex gap-2 text-2xl">
-                  <FaRegCalendarAlt className="text-primary" />
-                  Cronograma
-                </h2>
-                <div className="space-y-4">
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <p className="text-sm text-gray-500">Fecha de Inicio</p>
-                    <p className="font-semibold text-lg">{fechaInicio}</p>
-                  </div>
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <p className="text-sm text-gray-500">Fecha de Finalización</p>
-                    <p className="font-semibold text-lg">{fechaFin}</p>
+              
+              <div className="lg:col-span-1">
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                  <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
+                    <Calendar className="w-6 h-6 text-primary" />
+                    Fechas
+                  </h2>
+                  <div className="space-y-4">
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Clock className="w-5 h-5 text-primary" />
+                        <span className="font-medium">Inicio</span>
+                      </div>
+                      <p className="text-gray-600">{fechaInicio}</p>
+                    </div>
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Clock className="w-5 h-5 text-primary" />
+                        <span className="font-medium">Finalización</span>
+                      </div>
+                      <p className="text-gray-600">{fechaFin}</p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </>
-        )}
+            </>
+          )}
 
-        {activeTab === "team" && (
-          <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="card bg-white shadow-sm hover:shadow-md transition-shadow">
-              <div className="card-body">
-                <h2 className="card-title flex gap-2">
-                  <FaUserTie className="text-primary" />
+          {activeTab === "team" && (
+            <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                  <User className="w-5 h-5 text-primary" />
                   Líder del Proyecto
                 </h2>
-                <div>
-                  <p className="font-semibold">{liderProyecto?.nombre}</p>
-                  <p className="text-sm text-gray-500">{liderProyecto?.email}</p>
+                <div className="flex items-center gap-4">
+                  <div className="avatar placeholder">
+                    <div className="bg-primary text-white rounded-full w-12 h-12">
+                      <span className="text-xl">{liderProyecto?.nombre?.[0]}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="font-medium">{liderProyecto?.nombre}</p>
+                    <p className="text-sm text-gray-500">{liderProyecto?.email}</p>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="card bg-white shadow-sm hover:shadow-md transition-shadow">
-              <div className="card-body">
-                <h2 className="card-title flex gap-2">
-                  <FaChalkboardTeacher className="text-primary" />
-                  Docente Guía
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                  <User className="w-5 h-5 text-primary" />
+                  Profesor Guía
                 </h2>
-                <div>
-                  <p className="font-semibold">{profesorGuia?.nombre}</p>
-                  <p className="text-sm text-gray-500">{profesorGuia?.email}</p>
+                <div className="flex items-center gap-4">
+                  <div className="avatar placeholder">
+                    <div className="bg-primary text-white rounded-full w-12 h-12">
+                      <span className="text-xl">{profesorGuia?.nombre?.[0]}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="font-medium">{profesorGuia?.nombre}</p>
+                    <p className="text-sm text-gray-500">{profesorGuia?.email}</p>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="card bg-white shadow-sm hover:shadow-md transition-shadow">
-              <div className="card-body">
-                <h2 className="card-title flex gap-2">
-                  <FaUsers className="text-primary" />
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                  <Users className="w-5 h-5 text-primary" />
                   Colaboradores
                 </h2>
-                <ul className="space-y-4">
-                  {colaboradores?.map((collaborator, index) => (
-                    <li key={index} className="flex items-center gap-3">
+                <div className="space-y-4">
+                  {colaboradores?.map((colaborador, index) => (
+                    <div key={index} className="flex items-center gap-4">
                       <div className="avatar placeholder">
-                        <div className="bg-primary text-white rounded-full w-8 h-8 flex items-center justify-center">
-                          {collaborator.nombre[0]}
+                        <div className="bg-primary text-white rounded-full w-10 h-10">
+                          <span>{colaborador.nombre[0]}</span>
                         </div>
                       </div>
                       <div>
-                        <p className="font-semibold">{collaborator.nombre}</p>
-                        <p className="text-sm text-gray-500">
-                          {collaborator.email}
-                        </p>
+                        <p className="font-medium">{colaborador.nombre}</p>
+                        <p className="text-sm text-gray-500">{colaborador.email}</p>
                       </div>
-                    </li>
+                    </div>
                   ))}
-                </ul>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === "docs" && (
-          <div className="lg:col-span-3">
-            <div className="card bg-white shadow-sm hover:shadow-md transition-shadow">
-              <div className="card-body">
-                <h2 className="card-title">Documentos del Proyecto</h2>
-                <div className="flex flex-col md:flex-row gap-4">
-                  {/* Lista de archivos */}
-                  <div className="w-full md:w-1/4">
-                    <ul className="menu bg-base-100 p-2 rounded-box border">
-                      {files.map((file, index) => (
-                        <li key={index}>
-                          <button
-                            className={`text-left hover:bg-primary hover:text-white transition-all ${activeFile === file ? 'bg-primary text-white' : ''
-                              }`}
-                            onClick={() => setActiveFile(file)}
-                          >
-                            {file.nombreArchivo}
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {/* Visualización del archivo */}
-                  <div className="w-full md:w-3/4">
-                    {activeFile ? (
-                      <iframe
-                        src={`https://hackathon-back-production.up.railway.app/archivos/archivo-por-nombre/${activeFile.nombreArchivo}`}
-                        className="w-full h-[22rem] border rounded-md"
-                        title={`Vista Previa - ${activeFile.nombreArchivo}`}
-                      ></iframe>
-                    ) : (
-                      <p className="text-gray-500">
-                        Selecciona un archivo para previsualizarlo.
-                      </p>
-                    )}
-                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {activeTab === "messages" && (
-          <div className="lg:col-span-3">
-            <div className="card bg-white shadow-sm">
-              <div className="card-body">
-                <h2 className="card-title flex gap-2 text-2xl mb-6">
-                  <FaComments className="text-primary" />
-                  Mensajes del Proyecto
+          {activeTab === "docs" && hasDocuments && (
+            <div className="lg:col-span-3">
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <h2 className="text-2xl font-semibold mb-6 flex items-center gap-2">
+                  <Upload className="w-6 h-6 text-primary" />
+                  Documentos del Proyecto
+                </h2>
+                <div className="grid grid-cols-1 gap-6">
+                  {vistaPreviaDocumento.map((docUrl, index) => (
+                    <div key={index} className="bg-gray-50 rounded-lg p-6">
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="font-medium">Documento {index + 1}</h3>
+                        <a
+                          href={docUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn btn-primary btn-sm gap-2"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                          Abrir en nueva pestaña
+                        </a>
+                      </div>
+                      <iframe
+                        src={docUrl}
+                        className="w-full h-[600px] rounded-lg border border-gray-200"
+                        title={`Documento ${index + 1}`}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "messages" && (
+            <div className="lg:col-span-3">
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <h2 className="text-2xl font-semibold mb-6 flex items-center gap-2">
+                  <MessageSquare className="w-6 h-6 text-primary" />
+                  Mensajes
                 </h2>
 
                 {isTeacher && (
@@ -495,8 +497,8 @@ const ProjectView = () => {
                         placeholder="Escribe un mensaje..."
                         className="input input-bordered flex-1"
                       />
-                      <button type="submit" className="btn btn-primary">
-                        <FaPaperPlane />
+                      <button type="submit" className="btn btn-primary gap-2">
+                        <Send className="w-4 h-4" />
                         Enviar
                       </button>
                     </div>
@@ -505,28 +507,18 @@ const ProjectView = () => {
 
                 <div className="space-y-4 max-h-[600px] overflow-y-auto">
                   {messages.length === 0 ? (
-                    <div className="text-center text-gray-500 py-8">
-                      <FaComments className="mx-auto text-4xl mb-2 opacity-50" />
-                      <p>No hay mensajes en este proyecto</p>
+                    <div className="text-center py-12">
+                      <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-500">No hay mensajes en este proyecto</p>
                     </div>
                   ) : (
-                    messages.map((message) => (
+                    messages.map((message, index) => (
                       <div
-                        key={message.id}
-                        className="flex gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                        key={index}
+                        className="flex gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                       >
-                        {/* <div className="flex-shrink-0">
-                          {getMessageIcon(message.tipo)}
-                        </div> */}
                         <div className="flex-grow">
-                          <p className="text-gray-800">
-                            {message.message}
-                          </p>
-                          {/* {message.fecha && (
-                            <p className="text-xs text-gray-400 mt-2">
-                              {formatDate(message.fecha)}
-                            </p>
-                          )} */}
+                          <p className="text-gray-800">{message.message}</p>
                         </div>
                       </div>
                     ))
@@ -534,10 +526,10 @@ const ProjectView = () => {
                 </div>
               </div>
             </div>
-          </div>
-        )}
-      </motion.div>
-    </motion.div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 };
 
