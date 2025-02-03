@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FaUserEdit, FaSearch } from 'react-icons/fa';
 import { toast } from 'sonner';
-import { getAllUsers, searchUsers } from '../../../../utils/services/get';
+import { getAllUsers, searchUsers, getReporteUsuarios } from '../../../../utils/services/get';
 import EditUserRole from './editUser';
 
 const UserList = () => {
@@ -11,13 +12,12 @@ const UserList = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
 
-  // Fetch all users on component mount
   useEffect(() => {
     const fetchUsers = async () => {
       try {
         const usersData = await getAllUsers();
         setUsers(usersData);
-        setFilteredUsers(usersData); // Sincroniza el filtro con los usuarios originales
+        setFilteredUsers(usersData); 
       } catch (error) {
         toast.error('Error al obtener usuarios');
       }
@@ -25,17 +25,12 @@ const UserList = () => {
     fetchUsers();
   }, []);
 
-
-  // Search functionality
-  // Search functionality
   const handleSearch = (e) => {
     e.preventDefault();
     if (!searchTerm.trim()) {
-      // Si el término está vacío, mostrar todos los usuarios
       setFilteredUsers(users);
       return;
     }
-    // Filtrar usuarios localmente
     const results = users.filter((user) =>
       user.cedula.toString().includes(searchTerm) ||
       user.correo.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -45,8 +40,6 @@ const UserList = () => {
     setFilteredUsers(results);
   };
 
-
-  // Handle role save
   const handleSaveRole = (updatedUser) => {
     const updatedUsers = users.map((user) =>
       user.cedula === updatedUser.cedula ? updatedUser : user
@@ -56,12 +49,10 @@ const UserList = () => {
     setSelectedUser(null);
   };
 
-  // Handle role edit cancel
   const handleCancelEdit = () => {
     setSelectedUser(null);
   };
 
-  // Utility to determine badge color for roles
   const getRoleColor = (rol) => {
     switch (rol.toLowerCase()) {
       case 'admin':
@@ -75,9 +66,36 @@ const UserList = () => {
     }
   };
 
+  // Función para descargar el reporte de usuarios
+  const handleDownloadUserReport = async () => {
+    try {
+      const response = await getReporteUsuarios();
+      const url = window.URL.createObjectURL(new Blob([response]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `reporte_usuarios.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success("Reporte de usuarios descargado con éxito");
+    } catch (error) {
+      toast.error("Error al descargar el reporte de usuarios");
+    }
+  };
+
   return (
     <div className="p-6 bg-base-200 min-h-screen">
       <h1 className="text-3xl font-bold mb-6">Gestión de Usuarios</h1>
+
+      {/* Botón para descargar reporte de usuarios */}
+      <div className="mb-5">
+        <button 
+          onClick={handleDownloadUserReport} 
+          className="btn btn-primary"
+        >
+          Descargar Reporte de Usuarios
+        </button>
+      </div>
 
       {/* Search Bar */}
       <form onSubmit={handleSearch} className="mb-5 flex gap-2">
@@ -97,7 +115,6 @@ const UserList = () => {
           </div>
         </div>
       </form>
-
 
       {/* User Table */}
       <div className="overflow-x-auto bg-base-100 rounded-lg shadow-lg">

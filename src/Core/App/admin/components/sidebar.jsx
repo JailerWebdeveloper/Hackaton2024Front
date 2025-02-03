@@ -99,7 +99,7 @@ const Sidebar = () => {
                     id="useraside"
                 >
                     <div className="flex flex-row md:flex-col">
-                        <Link to="/profile" className="avatar online placeholder">
+                        <Link to="/dashboard/profile" className="avatar online placeholder">
                             <div className="bg-blue-500 text-white w-[2rem] md:w-16 rounded-full flex items-center justify-center">
                                 <span className="text-xl">
                                     {user?.nombre?.[0]?.toUpperCase() || ''}{user?.apellido?.[0]?.toUpperCase() || ''}

@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUser } from "../../../../utils/hooks/useAuth";
 import { FaEdit, FaEye } from "react-icons/fa";
-import { getProjectsbyEmail, GetallProjects } from "../../../../utils/services/get";
+import { getProjectsbyEmail, GetallProjects, getallReporteProyectos } from "../../../../utils/services/get";
 
 const UserProjects = () => {
   const { user, loading: userLoading, error: userError } = useUser();
@@ -47,6 +47,23 @@ const UserProjects = () => {
     navigate(`/dashboard/project/${projectId}`);
   };
 
+  // Función para descargar el reporte de proyectos
+  const handleDownloadProjectReport = async () => {
+    try {
+      const response = await getallReporteProyectos();
+      const url = window.URL.createObjectURL(new Blob([response]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `reporte_proyectos.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success("Reporte de proyectos descargado con éxito");
+    } catch (error) {
+      toast.error("Error al descargar el reporte de proyectos");
+    }
+  };
+
   if (userLoading || loading) {
     return (
       <div className="w-full min-h-[60vh] flex flex-col items-center justify-center">
@@ -75,6 +92,16 @@ const UserProjects = () => {
           {user?.rol === "administrador" ? "Todos los Proyectos" : "Mis Proyectos"}
         </motion.h1>
 
+        {/* Botón para descargar el reporte de proyectos */}
+        <div className="mb-6">
+          <button 
+            onClick={handleDownloadProjectReport} 
+            className="btn btn-primary"
+          >
+            Descargar Reporte de Proyectos
+          </button>
+        </div>
+
         <div className="bg-white rounded-xl w-full h-full overflow-auto p-8 shadow-lg">
           <AnimatePresence mode="wait">
             {projects.length === 0 ? (
@@ -91,11 +118,7 @@ const UserProjects = () => {
                 </p>
               </motion.div>
             ) : (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <div className="overflow-x-auto">
                   <table className="table table-zebra w-full">
                     <thead>
@@ -127,15 +150,10 @@ const UserProjects = () => {
                               {project.estado}
                             </span>
                           </td>
-                          <td>
-                            {new Date(project.fechaInicio).toLocaleDateString()}
-                          </td>
-                          <td>
-                            {new Date(project.fechaFin).toLocaleDateString()}
-                          </td>
+                          <td>{new Date(project.fechaInicio).toLocaleDateString()}</td>
+                          <td>{new Date(project.fechaFin).toLocaleDateString()}</td>
                           <td>{project.programa?.nombre || "No especificado"}</td>
                           <td className="flex gap-2">
-                            {/* Botón para ir a la vista del proyecto */}
                             <button
                               onClick={() => handleView(project.id)}
                               className="btn btn-ghost btn-sm"
@@ -143,7 +161,6 @@ const UserProjects = () => {
                             >
                               <FaEye className="text-success" />
                             </button>
-                            {/* Botón para editar el proyecto */}
                             <button
                               onClick={() => handleEdit(project.id)}
                               className="btn btn-ghost btn-sm"

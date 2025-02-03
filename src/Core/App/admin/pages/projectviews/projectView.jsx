@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { motion } from "framer-motion";
+import Select from "react-select";
 import {
   Calendar,
   Users,
@@ -24,7 +25,8 @@ import {
   getFilesbyProject,
   getMessagesbyProject,
   getProjectsByID,
-  getReporteProyectos
+  getReporteProyectos,
+  getAllUsers
 } from "../../../../utils/services/get";
 import { createMensaje } from "../../../../utils/services/post";
 import { updateProyecto } from "../../../../utils/services/put"; 
@@ -41,10 +43,12 @@ const ProjectView = () => {
   const [newMessage, setNewMessage] = useState("");
   const [isTeacher, setIsTeacher] = useState(false);
 
+  // Estados para modal de actualizar estado
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [selectedState, setSelectedState] = useState("");
   const [updateReason, setUpdateReason] = useState("");
 
+  // Estados posibles (para mostrar el stepper en la vista principal)
   const projectStates = [
     "Activo",
     "En revisión",
@@ -57,7 +61,8 @@ const ProjectView = () => {
 
   useEffect(() => {
     if (project?.vistaPreviaDocumento?.length > 0) {
-      setActiveDocumentUrl(project.vistaPreviaDocumento[0]);
+      // Se asume que cada elemento es un objeto con propiedad "ruta" o bien es una URL directa
+      setActiveDocumentUrl(project.vistaPreviaDocumento[0].ruta || project.vistaPreviaDocumento[0]);
     }
   }, [project?.vistaPreviaDocumento]);
 
@@ -130,14 +135,14 @@ const ProjectView = () => {
     }
   };
 
-  // Abre el modal y asigna el estado actual del proyecto al stepper
+  // Abre el modal para actualizar estado
   const handleOpenUpdateModal = () => {
     setSelectedState(project.estado);
     setUpdateReason("");
     setIsUpdateModalOpen(true);
   };
 
-  // Función para actualizar el estado
+  // Actualiza el estado usando el select del modal
   const handleUpdateStatus = async () => {
     if (!selectedState || !updateReason.trim()) {
       toast.error("Por favor, selecciona un estado y proporciona una razón.");
@@ -145,13 +150,10 @@ const ProjectView = () => {
     }
 
     try {
-      // Crea el objeto actualizado
       const updatedProjectData = { ...project, estado: selectedState };
 
-      // Envía la actualización vía PUT
       await updateProyecto(project.id, updatedProjectData);
 
-      // Envía un mensaje con la razón y el nuevo estado
       const messageData = {
         projectId: parseInt(id),
         message: `El estado del proyecto ha sido actualizado a "${selectedState}". Razón: ${updateReason}`,
@@ -208,7 +210,110 @@ const ProjectView = () => {
     vistaPreviaDocumento
   } = project;
 
-  const hasDocuments = vistaPreviaDocumento?.length > 0;
+  const hasDocuments = vistaPreviaDocumento && vistaPreviaDocumento.length > 0;
+
+  // Renderiza el stepper de estados en la vista principal
+  const renderStepper = () => (
+    <div className="steps mb-6">
+      {projectStates.map((stateOption, index) => (
+        <div
+          key={index}
+          className={`step ${estado === stateOption ? "step-primary" : ""}`}
+        >
+          {stateOption}
+        </div>
+      ))}
+    </div>
+  );
+
+  // Módulo de asignar evaluador:
+  // Ahora se filtran usuarios con rol "docente" y se asigna como colaborador con rol "Evaluador de Proyecto"
+  const AssignEvaluator = () => {
+    const [evaluatorOptions, setEvaluatorOptions] = useState([]);
+    const [selectedEvaluator, setSelectedEvaluator] = useState(null);
+    const [loadingEvaluator, setLoadingEvaluator] = useState(false);
+
+    useEffect(() => {
+      const loadEvaluators = async () => {
+        try {
+          const usersData = await getAllUsers();
+          // Filtrar usuarios con rol "docente"
+          const evaluators = usersData.filter(
+            (u) => u.rol && u.rol.toLowerCase() === "docente"
+          );
+          const options = evaluators.map((u) => ({
+            value: u.cedula,
+            label: `${u.nombre} ${u.apellido} (${u.correo})`,
+            nombre: `${u.nombre} ${u.apellido}`,
+            email: u.correo,
+            rol: "Evaluador de Proyecto"
+          }));
+          setEvaluatorOptions(options);
+        } catch (error) {
+          toast.error("Error al cargar evaluadores");
+        }
+      };
+      loadEvaluators();
+    }, []);
+
+    const handleAssignEvaluator = async () => {
+      if (!selectedEvaluator) {
+        toast.error("Por favor, seleccione un evaluador");
+        return;
+      }
+      try {
+        setLoadingEvaluator(true);
+        const updatedProject = { ...project };
+        if (!updatedProject.colaboradores) {
+          updatedProject.colaboradores = [];
+        }
+        // Verificar si ya existe un evaluador asignado
+        const existingEvaluator = updatedProject.colaboradores.find(
+          (colab) =>
+            colab.rol.toLowerCase() === "evaluador de proyecto"
+        );
+        if (existingEvaluator) {
+          toast.error("Ya existe un evaluador asignado");
+          setLoadingEvaluator(false);
+          return;
+        }
+        updatedProject.colaboradores.push({
+          nombre: selectedEvaluator.nombre,
+          email: selectedEvaluator.email,
+          rol: "Evaluador de Proyecto"
+        });
+        await updateProyecto(updatedProject.id, updatedProject);
+        toast.success("Evaluador asignado correctamente");
+        setProject(updatedProject);
+        setSelectedEvaluator(null);
+      } catch (error) {
+        toast.error("Error al asignar el evaluador");
+      } finally {
+        setLoadingEvaluator(false);
+      }
+    };
+
+    return (
+      <div className="bg-white rounded-xl shadow-md p-6 mb-6">
+        <h2 className="text-2xl font-bold mb-4">Asignar Evaluador de Proyecto</h2>
+        <div className="mb-4">
+          <Select
+            options={evaluatorOptions}
+            value={selectedEvaluator}
+            onChange={setSelectedEvaluator}
+            placeholder="Seleccione un evaluador..."
+          />
+        </div>
+        <button
+          onClick={handleAssignEvaluator}
+          disabled={loadingEvaluator}
+          className="btn btn-primary"
+        >
+          {loadingEvaluator ? "Asignando..." : "Asignar Evaluador"}
+        </button>
+      </div>
+    );
+  };
 
   return (
     <div className="h-screen overflow-auto bg-gray-50">
@@ -220,11 +325,19 @@ const ProjectView = () => {
             <div className="flex items-center gap-2 text-gray-600">
               <BookOpen className="w-5 h-5" />
               <span>{programa?.nombre || "No especificado"}</span>
-              <span className={`badge ${estado === 'Activo' ? 'badge-primary' : 
-                                     estado === 'En revisión' ? 'badge-warning' : 
-                                     estado === 'Aceptado' ? 'badge-success' : 
-                                     estado === 'Negado' ? 'badge-error' : 
-                                     'badge-ghost'}`}>
+              <span
+                className={`badge ${
+                  estado === "Activo"
+                    ? "badge-primary"
+                    : estado === "En revisión"
+                    ? "badge-warning"
+                    : estado === "Aceptado"
+                    ? "badge-success"
+                    : estado === "Negado"
+                    ? "badge-error"
+                    : "badge-ghost"
+                }`}
+              >
                 {estado}
               </span>
             </div>
@@ -247,53 +360,11 @@ const ProjectView = () => {
           </div>
         </div>
 
-        {/* Modal para actualizar estado */}
-        {isUpdateModalOpen && (
-          <div className="modal modal-open">
-            <div className="modal-box relative">
-              <button 
-                className="btn btn-sm btn-circle absolute right-2 top-2"
-                onClick={() => setIsUpdateModalOpen(false)}
-              >
-                ✕
-              </button>
-              <h3 className="text-lg font-bold mb-4">
-                Actualizar Estado del Proyecto
-              </h3>
-              
-              {/* Stepper para mostrar la secuencia de estados */}
-              <div className="steps mb-4">
-                {projectStates.map((stateOption, index) => (
-                  <div
-                    key={index}
-                    className={`step cursor-pointer ${selectedState === stateOption ? "step-primary" : ""}`}
-                    onClick={() => setSelectedState(stateOption)}
-                  >
-                    {stateOption}
-                  </div>
-                ))}
-              </div>
+        {/* Stepper de estados (visible en la vista principal) */}
+        {renderStepper()}
 
-              {/* Campo para ingresar la razón */}
-              <div className="form-control mb-4">
-                <label className="label">
-                  <span className="label-text">Razón de la actualización</span>
-                </label>
-                <textarea
-                  value={updateReason}
-                  onChange={(e) => setUpdateReason(e.target.value)}
-                  className="textarea textarea-bordered"
-                  placeholder="Ingresa la razón de la actualización..."
-                ></textarea>
-              </div>
-
-              <div className="modal-action">
-                <button className="btn btn-ghost" onClick={() => setIsUpdateModalOpen(false)}>Cancelar</button>
-                <button className="btn btn-primary" onClick={handleUpdateStatus}>Actualizar Estado</button>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Módulo de Asignar Evaluador (solo para Administrador) */}
+        {user?.rol?.toLowerCase() === "admin" && <AssignEvaluator />}
 
         {/* Navigation Tabs */}
         <div className="tabs tabs-boxed bg-white p-2 rounded-lg mb-6">
@@ -327,7 +398,9 @@ const ProjectView = () => {
             <MessageSquare className="w-5 h-5" />
             Mensajes
             {messages.length > 0 && (
-              <span className="badge badge-primary badge-sm">{messages.length}</span>
+              <span className="badge badge-primary badge-sm">
+                {messages.length}
+              </span>
             )}
           </button>
         </div>
@@ -343,19 +416,21 @@ const ProjectView = () => {
                     Descripción y Objetivos
                   </h2>
                   <p className="text-gray-600 mb-6">{descripcion}</p>
-                  
-                  <h3 className="text-xl font-semibold mb-4">Objetivos del Proyecto</h3>
+                  <h3 className="text-xl font-semibold mb-4">
+                    Objetivos del Proyecto
+                  </h3>
                   <ul className="space-y-3">
                     {objetivos?.map((objetivo, index) => (
                       <li key={index} className="flex items-start gap-2">
                         <CheckCircle className="w-5 h-5 text-primary mt-1" />
-                        <span className="text-gray-600">{objetivo.nombre}</span>
+                        <span className="text-gray-600">
+                          {objetivo.nombre}
+                        </span>
                       </li>
                     ))}
                   </ul>
                 </div>
               </div>
-              
               <div className="lg:col-span-1">
                 <div className="bg-white rounded-xl shadow-sm p-6">
                   <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
@@ -393,12 +468,16 @@ const ProjectView = () => {
                 <div className="flex items-center gap-4">
                   <div className="avatar placeholder">
                     <div className="bg-primary text-white rounded-full w-12 h-12">
-                      <span className="text-xl">{liderProyecto?.nombre?.[0]}</span>
+                      <span className="text-xl">
+                        {liderProyecto?.nombre?.[0]}
+                      </span>
                     </div>
                   </div>
                   <div>
                     <p className="font-medium">{liderProyecto?.nombre}</p>
-                    <p className="text-sm text-gray-500">{liderProyecto?.email}</p>
+                    <p className="text-sm text-gray-500">
+                      {liderProyecto?.email}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -411,12 +490,16 @@ const ProjectView = () => {
                 <div className="flex items-center gap-4">
                   <div className="avatar placeholder">
                     <div className="bg-primary text-white rounded-full w-12 h-12">
-                      <span className="text-xl">{profesorGuia?.nombre?.[0]}</span>
+                      <span className="text-xl">
+                        {profesorGuia?.nombre?.[0]}
+                      </span>
                     </div>
                   </div>
                   <div>
                     <p className="font-medium">{profesorGuia?.nombre}</p>
-                    <p className="text-sm text-gray-500">{profesorGuia?.email}</p>
+                    <p className="text-sm text-gray-500">
+                      {profesorGuia?.email}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -437,6 +520,10 @@ const ProjectView = () => {
                       <div>
                         <p className="font-medium">{colaborador.nombre}</p>
                         <p className="text-sm text-gray-500">{colaborador.email}</p>
+                        {colaborador.rol &&
+                          colaborador.rol.toLowerCase() === "evaluador de proyecto" && (
+                            <span className="badge badge-info mt-1">Evaluador</span>
+                          )}
                       </div>
                     </div>
                   ))}
@@ -453,12 +540,12 @@ const ProjectView = () => {
                   Documentos del Proyecto
                 </h2>
                 <div className="grid grid-cols-1 gap-6">
-                  {vistaPreviaDocumento.map((docUrl, index) => (
+                  {vistaPreviaDocumento.map((doc, index) => (
                     <div key={index} className="bg-gray-50 rounded-lg p-6">
                       <div className="flex justify-between items-center mb-4">
                         <h3 className="font-medium">Documento {index + 1}</h3>
                         <a
-                          href={docUrl}
+                          href={doc.ruta || doc}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="btn btn-primary btn-sm gap-2"
@@ -468,7 +555,7 @@ const ProjectView = () => {
                         </a>
                       </div>
                       <iframe
-                        src={docUrl}
+                        src={doc.ruta || doc}
                         className="w-full h-[600px] rounded-lg border border-gray-200"
                         title={`Documento ${index + 1}`}
                       />
@@ -486,7 +573,6 @@ const ProjectView = () => {
                   <MessageSquare className="w-6 h-6 text-primary" />
                   Mensajes
                 </h2>
-
                 {isTeacher && (
                   <form onSubmit={handleSubmitMessage} className="mb-6">
                     <div className="flex gap-2">
@@ -504,7 +590,6 @@ const ProjectView = () => {
                     </div>
                   </form>
                 )}
-
                 <div className="space-y-4 max-h-[600px] overflow-y-auto">
                   {messages.length === 0 ? (
                     <div className="text-center py-12">
@@ -513,10 +598,7 @@ const ProjectView = () => {
                     </div>
                   ) : (
                     messages.map((message, index) => (
-                      <div
-                        key={index}
-                        className="flex gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                      >
+                      <div key={index} className="flex gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                         <div className="flex-grow">
                           <p className="text-gray-800">{message.message}</p>
                         </div>
@@ -528,6 +610,55 @@ const ProjectView = () => {
             </div>
           )}
         </div>
+
+        {/* Modal para actualizar estado (usa un select en lugar del stepper) */}
+        {isUpdateModalOpen && (
+          <div className="modal modal-open">
+            <div className="modal-box relative">
+              <button className="btn btn-sm btn-circle absolute right-2 top-2" onClick={() => setIsUpdateModalOpen(false)}>
+                ✕
+              </button>
+              <h3 className="text-lg font-bold mb-4">Actualizar Estado del Proyecto</h3>
+              {/* Se usa un select para cambiar el estado */}
+              <div className="form-control mb-4">
+                <label className="label">
+                  <span className="label-text">Nuevo Estado</span>
+                </label>
+                <select
+                  value={selectedState}
+                  onChange={(e) => setSelectedState(e.target.value)}
+                  className="select select-bordered w-full"
+                >
+                  {projectStates.map((stateOption, index) => (
+                    <option key={index} value={stateOption}>
+                      {stateOption}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {/* Campo para ingresar la razón */}
+              <div className="form-control mb-4">
+                <label className="label">
+                  <span className="label-text">Razón de la actualización</span>
+                </label>
+                <textarea
+                  value={updateReason}
+                  onChange={(e) => setUpdateReason(e.target.value)}
+                  className="textarea textarea-bordered"
+                  placeholder="Ingresa la razón de la actualización..."
+                ></textarea>
+              </div>
+              <div className="modal-action">
+                <button className="btn btn-ghost" onClick={() => setIsUpdateModalOpen(false)}>
+                  Cancelar
+                </button>
+                <button className="btn btn-primary" onClick={handleUpdateStatus}>
+                  Actualizar Estado
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

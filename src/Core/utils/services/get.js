@@ -94,6 +94,7 @@ export const getProjectsbyEmail = async (email) => {
   return getData(`/proyectos/search/email?${queryParams}`);
 };
 
+
 export const getProjectsbyName = async (name) => {
   return getData(`/proyectos/search/name/${name}`);
 };
@@ -115,6 +116,10 @@ export const getMensajesporCorreo = async (email) => {
 export const getReporteUsuarios = async () => {
   return getData(`/reports/users`);
 };
+
+export const getallReporteProyectos = async ()=>{
+  return getData('/reports/projects')
+}
 
 export const getReporteProyectos = async (id) => {
   try {

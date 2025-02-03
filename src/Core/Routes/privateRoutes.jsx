@@ -10,18 +10,21 @@ import ProjectEdit from "../App/admin/pages/projectviews/projectEdit";
 import { AuthPrivateRoute } from "../utils/hooks/authPrivateRoute";
 import Programs from "../App/admin/pages/recursos/programasManage";
 import Faculties from "../App/admin/pages/recursos/facultadManage";
+import Profile from "../App/admin/pages/users/profile";
 
 
 const PrivateRoutes = () => (
   <Routes>
   <Route path="/" element={<AuthPrivateRoute><AdminLayout /></AuthPrivateRoute>}>
     <Route index element={<Dashboard/>} />
-    <Route path="project/:id" element={<ProjectView/>}/>
+    <Route path="/project/:id" element={<ProjectView/>}/>
     <Route path="/reports/general" element={<Reports/>}/>
     <Route path="/projects/create" element={<CreateProject/>}/>
     <Route path="/projects/edit/:id" element={<ProjectEdit/>}/>
     <Route path="/projects/list" element={<UserProjects/>}/>
     <Route path="/users/list" element={<UserList/>}/>
+    <Route path="/profile" element={<Profile/>}/>
+
     <Route path ='/manage/programs' element={<Programs/>}/>
     <Route path ='/manage/Faculties' element={<Faculties/>}/>
   </Route>
