@@ -114,11 +114,27 @@ export const getMensajesporCorreo = async (email) => {
 
 //reportes
 export const getReporteUsuarios = async () => {
-  return getData(`/reports/users`);
+  try {
+    const response = await baseApi.get(`/reports/users`, {
+      responseType: "blob",
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error al obtener el reporte:", error);
+    throw error;
+  }
 };
 
 export const getallReporteProyectos = async ()=>{
-  return getData('/reports/projects')
+  try {
+    const response = await baseApi.get(`/reports/projects`, {
+      responseType: "blob",
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error al obtener el reporte:", error);
+    throw error;
+  }
 }
 
 export const getReporteProyectos = async (id) => {
