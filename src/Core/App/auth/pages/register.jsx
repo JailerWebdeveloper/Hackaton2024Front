@@ -36,8 +36,8 @@ const Register = () => {
                 setFacultades(facultadesData);
                 setProgramas(programasData);
             } catch (error) {
-                toast.error('Error al cargar datos', { 
-                    description: 'No se pudieron cargar las facultades y programas' 
+                toast.error('Error al cargar datos', {
+                    description: 'No se pudieron cargar las facultades y programas'
                 });
             }
         };
@@ -119,28 +119,27 @@ const Register = () => {
                     correo: formState.correo,
                     usuario: formState.usuario,
                     contrasena: formState.contrasena,
-                    rol: "estudiante", 
+                    rol: "estudiante",
                     facultadId: parseInt(formState.facultadId),
                     programaId: parseInt(formState.programaId)
                 };
 
                 const response = await createUser(data);
+                console.log(response)
 
-
-                if (response.ok) {
+                if (response.status.status == 201 || response.status.status == 200) {
                     toast.success('Usuario registrado correctamente', {
                         description: 'Redirigiendo a inicio de sesión',
                         duration: 2000
                     });
                     navigate("/auth/login");
                 } else {
-                    const errorData = await response.json();
                     toast.error('Error al registrar', {
-                        description: errorData.message || 'No se pudo completar el registro'
+                        description: response.status.data.message[0] || 'No se pudo completar el registro'
                     });
                 }
             } catch (error) {
-                toast.error('Error de conexión', { description: 'Intente nuevamente más tarde' });
+                toast.error('Error de conexión', { description: error.message[0]});
                 console.error("Error during registration:", error);
             }
         }

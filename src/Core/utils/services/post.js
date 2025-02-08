@@ -3,10 +3,8 @@ import baseApi from "./api";
 export const postData = async (endpoint, body) => {
   try {
     const response = await baseApi.post(endpoint, body);
-    console.log(response);
     return {
-      status: response.status,
-      data: response.data,
+     response
     };
   } catch (error) {
     if (error.response) {

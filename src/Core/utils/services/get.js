@@ -148,3 +148,16 @@ export const getReporteProyectos = async (id) => {
     throw error;
   }
 };
+
+
+export const getReporteProyectosexcel = async (id) => {
+  try {
+    const response = await baseApi.get(`/reports/export`, {
+      responseType: "blob",
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error al obtener el reporte:", error);
+    throw error;
+  }
+};

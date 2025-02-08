@@ -84,7 +84,7 @@ const UserList = () => {
   };
 
   return (
-    <div className="p-6 bg-base-200 min-h-screen">
+    <div className="p-6 bg-base-200  overflow-auto h-screen">
       <h1 className="text-3xl font-bold mb-6">Gestión de Usuarios</h1>
 
       {/* Botón para descargar reporte de usuarios */}
