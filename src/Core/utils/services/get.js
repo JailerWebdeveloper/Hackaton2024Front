@@ -1,4 +1,3 @@
-import axios from "axios";
 import baseApi from "./api";
 
 export const getData = async (endpoint, params = {}) => {
