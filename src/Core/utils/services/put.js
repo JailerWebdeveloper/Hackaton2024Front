@@ -3,7 +3,6 @@ import axios from "axios";
 
 export const updateData = async (endpoint, body) => {
   try {
-    console.log("Payload enviado:", body);
 
     const response = await baseApi.put(endpoint, body);
     return response.data;

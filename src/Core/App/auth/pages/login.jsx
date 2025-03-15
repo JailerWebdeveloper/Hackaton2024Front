@@ -36,9 +36,8 @@ const Login = () => {
                 usuario: email,
                 contrasena: password,
             }
-            console.log(data)
             const response = await loginUser(data);
-            console.log(response)
+
             if (response.status === 200 || response.status === 201) {
                 const token = response.data.token;
 
@@ -52,6 +51,10 @@ const Login = () => {
                 }
 
                 const decodedToken = jwtDecode(token);
+                if(decodedToken.rol == "inactivo"){
+                    toast.warning('su usuario se encuentra inactivo')
+                    return;
+                }
                 toast.success('Inicio de sesión exitoso', {
                     description: `Bienvenido, ${decodedToken.name || 'usuario'}`,
                     duration: 2000

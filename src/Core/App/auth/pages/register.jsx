@@ -119,13 +119,12 @@ const Register = () => {
                     correo: formState.correo,
                     usuario: formState.usuario,
                     contrasena: formState.contrasena,
-                    rol: "estudiante",
+                    rol: "inactivo",
                     facultadId: parseInt(formState.facultadId),
                     programaId: parseInt(formState.programaId)
                 };
 
                 const response = await createUser(data);
-                console.log(response)
 
                 if (response.status.status == 201 || response.status.status == 200) {
                     toast.success('Usuario registrado correctamente', {

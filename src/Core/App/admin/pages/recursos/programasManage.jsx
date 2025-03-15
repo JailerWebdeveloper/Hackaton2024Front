@@ -58,7 +58,6 @@ const Programs = () => {
                 toast.success("Programa actualizado con éxito");
             } else {
                const response = await createPrograma(newdata);
-                console.log(response);
                 toast.success("Programa creado con éxito");
             }
             await fetchData();

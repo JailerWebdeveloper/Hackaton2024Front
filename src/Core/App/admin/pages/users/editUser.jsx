@@ -7,7 +7,7 @@ import { updateUserRole } from '../../../../utils/services/put';
 const EditUserRole = ({ user, onSave, onCancel }) => {
   const [selectedRole, setSelectedRole] = useState(user.rol);
   const [loading, setLoading] = useState(false);
-  const roles = ['admin', 'Docente', 'estudiante'];
+  const roles = ['admin', 'Docente', 'estudiante', 'inactivo'];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -18,7 +18,7 @@ const EditUserRole = ({ user, onSave, onCancel }) => {
 
     setLoading(true);
     try {
-      await updateUserRole(user.id, selectedRole); // Use user.id instead of user.cedula
+      await updateUserRole(user.id, selectedRole); 
       toast.success('Rol actualizado exitosamente');
       onSave({ ...user, rol: selectedRole });
     } catch (error) {

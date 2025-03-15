@@ -26,7 +26,8 @@ export const createUser = async (body) => {
 };
 
 export const loginUser = async (body) => {
-  return postData(`/users/login`, body);
+  const response = await postData(`/users/login`, body);
+  return response.response
 };
 
 //facultad
